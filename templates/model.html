@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SentinelPay — Model &amp; Technology</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="nav-header">
+      <div class="brand-block">
+        <div class="brand-title">SENTINELPAY</div>
+        <div class="status-badge"><span class="dot"></span> System Operational</div>
+      </div>
+      <nav class="main-nav">
+        <a href="/">Dashboard</a>
+        <a href="/screen">Transaction Screening</a>
+        <a href="/batch">Batch Analysis</a>
+        <a href="/fraud-intelligence">Fraud Intelligence</a>
+        <a class="active" href="/model">Model &amp; Technology</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>SentinelPay Intelligence Engine</h1>
+        <p>Machine learning combined with behavioral and contextual evidence.</p>
+      </section>
+
+      <!-- System Architecture Visualization (Responsive Flow - No Horizontal Scrollbar) -->
+      <section class="panel">
+        <div class="section-title">System Architecture</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-start; padding: 10px 0;">
+          <div class="pipeline-node">INPUT TRANSACTION</div>
+          <div class="pipeline-arrow">→</div>
+          <div class="pipeline-node">FEATURE ENGINEERING</div>
+          <div class="pipeline-arrow">→</div>
+          <div class="pipeline-node">XGBOOST CLASSIFIER</div>
+          <div class="pipeline-arrow">→</div>
+          <div class="pipeline-node">PROBABILITY CALIBRATION</div>
+          <div class="pipeline-arrow">→</div>
+          <div class="pipeline-node">BEHAVIORAL ANALYSIS</div>
+          <div class="pipeline-arrow">→</div>
+          <div class="pipeline-node">EVIDENCE ENGINE</div>
+          <div class="pipeline-arrow">→</div>
+          <div class="pipeline-node">HYBRID RISK ENGINE</div>
+          <div class="pipeline-arrow">→</div>
+          <div class="pipeline-node" style="color: var(--accent); border-color: var(--accent);">DECISION</div>
+        </div>
+      </section>
+
+      <!-- Core Intelligence Components -->
+      <section class="panel">
+        <div class="section-title">Core Intelligence Components</div>
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="label" style="color: var(--accent);">Machine Learning</div>
+            <div style="font-weight: 700; font-size: 16px; margin: 4px 0;">XGBoost Classifier</div>
+            <div style="font-size: 13px; color: var(--text-muted);">Gradient boosted decision trees optimized for fraud pattern recognition.</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label" style="color: var(--accent);">Probability Calibration</div>
+            <div style="font-weight: 700; font-size: 16px; margin: 4px 0;">Platt Sigmoid Calibration</div>
+            <div style="font-size: 13px; color: var(--text-muted);">Converts raw tree outputs into true, well-calibrated fraud probability estimates.</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label" style="color: var(--accent);">Categorical Processing</div>
+            <div style="font-size: 16px; font-weight: 700; margin: 4px 0;">One-Hot Encoding</div>
+            <div style="font-size: 13px; color: var(--text-muted);">Handles unseen merchants, categories, and countries without pipeline failure.</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label" style="color: var(--accent);">Behavioral Analysis</div>
+            <div style="font-size: 16px; font-weight: 700; margin: 4px 0;">Past-Only Card History</div>
+            <div style="font-size: 13px; color: var(--text-muted);">Calculates velocity and distance deltas strictly from past activity.</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label" style="color: var(--accent);">Decision Engine</div>
+            <div style="font-size: 16px; font-weight: 700; margin: 4px 0;">Hybrid Risk Engine</div>
+            <div style="font-size: 13px; color: var(--text-muted);">Combines calibrated probability, business evidence, and anomaly intensity.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Validated Performance Metrics -->
+      <section class="panel">
+        <div class="section-title">Validated Model Performance</div>
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="label">PR-AUC</div>
+            <div class="value">74.88%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">ROC-AUC</div>
+            <div class="value">95.22%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">F1 Score</div>
+            <div class="value">67.11%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Precision</div>
+            <div class="value">76.37%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Recall</div>
+            <div class="value">59.84%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">False Positive Rate</div>
+            <div class="value">~1.00%</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Brier Score</div>
+            <div class="value">0.0229</div>
+          </div>
+        </div>
+        <p style="font-size: 13px; color: var(--text-dim); margin-top: 16px; font-style: italic;">
+          Prototype validation: Metrics were evaluated on the project's synthetic benchmark dataset and should not be interpreted as production banking performance.
+        </p>
+      </section>
+
+      <!-- Why SentinelPay is Different -->
+      <section class="panel">
+        <div class="section-title">Why SentinelPay Is Different</div>
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="label" style="color: var(--text-main);">1. ML Probability</div>
+            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Estimates exact transaction fraud likelihood using calibrated probabilities.</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label" style="color: var(--text-main);">2. Behavioral Context</div>
+            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Uses historical transaction behavior and velocity tracking where available.</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label" style="color: var(--text-main);">3. Independent Evidence</div>
+            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Evaluates independent signals such as geography, timing, and device history.</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label" style="color: var(--text-main);">4. Operational Decision</div>
+            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Combines ML and rule evidence into clear, actionable LOW / MEDIUM / HIGH risk decisions.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bottom Navigation -->
+      <div style="display: flex; justify-content: space-between; margin-top: 32px;">
+        <a class="btn btn-secondary" href="/fraud-intelligence">← Fraud Intelligence</a>
+        <a class="btn btn-primary" href="/">Back to Dashboard →</a>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

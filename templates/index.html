@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SentinelPay — Transaction Risk Assessment</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="nav-header">
+      <div class="brand-block">
+        <div class="brand-title">SENTINELPAY</div>
+        <div class="status-badge"><span class="dot"></span> System Operational</div>
+      </div>
+      <nav class="main-nav">
+        <a href="/">Dashboard</a>
+        <a class="active" href="/screen">Transaction Screening</a>
+        <a href="/batch">Batch Analysis</a>
+        <a href="/fraud-intelligence">Fraud Intelligence</a>
+        <a href="/model">Model &amp; Technology</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>Transaction Risk Assessment</h1>
+        <p>Evaluate a transaction using transaction-level, behavioral and contextual risk signals.</p>
+      </section>
+
+      <form id="txForm" class="panel">
+        <div class="section-title">Transaction Details</div>
+        <div class="form-grid" style="margin-bottom: 24px;">
+          <div class="field-group">
+            <label>Card ID</label>
+            <input name="card_id" value="999001" required>
+          </div>
+          <div class="field-group">
+            <label>Transaction Date / Time</label>
+            <input name="trans_date_trans_time" type="datetime-local" value="2026-08-17T18:30" required>
+          </div>
+          <div class="field-group">
+            <label>Amount (₹)</label>
+            <input name="amount_inr" type="number" step="0.01" value="1850" required>
+          </div>
+        </div>
+
+        <div class="section-title">Merchant &amp; Channel</div>
+        <div class="form-grid" style="margin-bottom: 24px;">
+          <div class="field-group">
+            <label>Merchant</label>
+            <select name="merchant_name" required>
+              {% for x in merchants %}<option>{{x}}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Merchant Category</label>
+            <select name="merchant_category" required>
+              {% for x in categories %}<option>{{x}}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Channel</label>
+            <select name="channel" required>
+              {% for x in channels %}<option>{{x}}</option>{% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="section-title">Network &amp; Location</div>
+        <div class="form-grid" style="margin-bottom: 24px;">
+          <div class="field-group">
+            <label>Network / IP Country</label>
+            <select name="ip_country" required>
+              {% for x in countries %}<option>{{x}}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Transaction City</label>
+            <select name="transaction_city" id="city" required>
+              {% for x in cities %}<option>{{x}}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Device ID</label>
+            <input name="device_id" value="DEV-DEMO-001" required>
+          </div>
+        </div>
+
+        <div class="section-title">Geographic Signals</div>
+        <div class="form-grid">
+          <div class="field-group">
+            <label>Customer Latitude</label>
+            <input name="customer_lat" type="number" step="0.000001" value="17.3850" required>
+          </div>
+          <div class="field-group">
+            <label>Customer Longitude</label>
+            <input name="customer_lon" type="number" step="0.000001" value="78.4867" required>
+          </div>
+          <div class="field-group">
+            <label>Merchant Latitude</label>
+            <input name="merchant_lat" type="number" step="0.000001" value="17.3880" required>
+          </div>
+          <div class="field-group">
+            <label>Merchant Longitude</label>
+            <input name="merchant_lon" type="number" step="0.000001" value="78.4890" required>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Analyze Transaction</button>
+          <button type="button" class="btn btn-secondary" id="pdfBtn">Download PDF Report</button>
+        </div>
+      </form>
+
+      <section id="result" class="panel hidden"></section>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

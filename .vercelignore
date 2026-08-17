@@ -1,0 +1,14 @@
+Dataset.csv
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.venv/
+env/
+venv/
+scratch/
+*.zip
+*.log
+tests/
+train_model.py

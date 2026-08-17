@@ -1,0 +1,28 @@
+# Training dataset (Kept on local machine, excluded from GitHub repository)
+Dataset.csv
+
+# Local Vercel CLI metadata
+.vercel/
+
+# Python compiled files & caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.dll
+*.dylib
+
+# Environment & IDE
+.env
+.venv/
+venv/
+ENV/
+env/
+.idea/
+.vscode/
+
+# Logs & Temporary Scratch Files
+*.log
+scratch/
+*.zip
+*.tar.gz

@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SentinelPay — Fraud Intelligence Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="nav-header">
+      <div class="brand-block">
+        <div class="brand-title">SENTINELPAY</div>
+        <div class="status-badge"><span class="dot"></span> System Operational</div>
+      </div>
+      <nav class="main-nav">
+        <a class="active" href="/">Dashboard</a>
+        <a href="/screen">Transaction Screening</a>
+        <a href="/batch">Batch Analysis</a>
+        <a href="/fraud-intelligence">Fraud Intelligence</a>
+        <a href="/model">Model &amp; Technology</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+        <div>
+          <h1>Real-Time Transaction Risk Intelligence</h1>
+          <p>Live transaction risk monitoring powered by calibrated machine learning, behavioral analysis, and contextual evidence.</p>
+          <div style="margin-top: 14px;">
+            <span class="status-badge"><span class="dot"></span> Risk Engine Operational</span>
+          </div>
+        </div>
+        <div>
+          <button id="resetSessionBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; opacity: 0.8;">↻ Clear Session Data</button>
+        </div>
+      </section>
+
+      <!-- KPI Cards Row -->
+      <section class="panel">
+        <div class="section-title">Session Screening Overview</div>
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="label">Total Transactions</div>
+            <div class="value" id="kpiTotal">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Total Value Analyzed</div>
+            <div class="value" id="kpiTotalVal" style="font-size: 20px;">₹0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Low Risk</div>
+            <div class="value low" id="kpiLow">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Suspicious</div>
+            <div class="value med" id="kpiMed">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Fraudulent</div>
+            <div class="value high" id="kpiHigh">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="label">Average Risk Score</div>
+            <div class="value" id="kpiAvgScore">0.0 / 100</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Analytics Row: 2 Charts -->
+      <div class="form-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 24px;">
+        <div class="panel" style="margin-bottom: 0;">
+          <div class="section-title">Risk Distribution</div>
+          <div style="position: relative; height: 240px;" id="distChartWrap">
+            <canvas id="riskDistChart"></canvas>
+          </div>
+        </div>
+        <div class="panel" style="margin-bottom: 0;">
+          <div class="section-title">Financial Exposure by Risk Tier</div>
+          <div style="position: relative; height: 240px;" id="valueChartWrap">
+            <canvas id="riskValueChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Trend Chart -->
+      <section class="panel">
+        <div class="section-title">Transaction Risk Score Trend</div>
+        <div style="position: relative; height: 220px;" id="trendChartWrap">
+          <canvas id="riskTrendChart"></canvas>
+        </div>
+      </section>
+
+      <!-- Recent Screenings Table & Filters -->
+      <section class="panel">
+        <div class="section-title">Recent Transaction Screenings</div>
+
+        <!-- Filter Bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; background: var(--bg-card); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border);">
+          <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+            <div class="field-group" style="margin: 0; min-width: 160px;">
+              <select id="dashFilterTier">
+                <option value="ALL">All Risk Tiers</option>
+                <option value="LOW">LOW</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="HIGH">HIGH</option>
+              </select>
+            </div>
+            <div class="field-group" style="margin: 0; min-width: 200px;">
+              <select id="dashFilterDecision">
+                <option value="ALL">All Decisions</option>
+                <option value="GENUINE TRANSACTION">Genuine Transaction</option>
+                <option value="SUSPICIOUS TRANSACTION">Suspicious Transaction</option>
+                <option value="FRAUDULENT TRANSACTION">Fraudulent Transaction</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <span id="dashFilterCount" style="font-size: 13px; font-weight: 600; color: var(--accent);">Showing 0 of 0 transactions</span>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Card ID</th>
+                <th>Merchant</th>
+                <th>Amount (₹)</th>
+                <th>Risk Tier</th>
+                <th>Decision</th>
+                <th>Risk Score</th>
+              </tr>
+            </thead>
+            <tbody id="recentBody">
+              <tr>
+                <td colspan="6" class="empty-state">No transactions analyzed in current session yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = 'Inter, sans-serif';
+
+    let distChartObj = null;
+    let valueChartObj = null;
+    let trendChartObj = null;
+
+    function esc(val) {
+      const str = val == null ? '' : String(val);
+      return str.replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    function getSessionHistory() {
+      try {
+        return JSON.parse(localStorage.getItem('sentinelpay_session_history') || '[]');
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function renderRecentTable(history) {
+      const tierSel = document.getElementById('dashFilterTier');
+      const decSel = document.getElementById('dashFilterDecision');
+      const countSpan = document.getElementById('dashFilterCount');
+      const tbody = document.getElementById('recentBody');
+
+      const selectedTier = tierSel ? tierSel.value : 'ALL';
+      const selectedDec = decSel ? decSel.value : 'ALL';
+
+      const filtered = history.filter(r => {
+        if (selectedTier !== 'ALL' && String(r.risk_level) !== selectedTier) return false;
+        if (selectedDec !== 'ALL' && String(r.decision) !== selectedDec) return false;
+        return true;
+      });
+
+      if (countSpan) {
+        countSpan.textContent = `Showing ${filtered.length} of ${history.length} transactions`;
+      }
+
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${history.length ? 'No transactions match selected filter' : 'No transactions analyzed in current session yet.'}</td></tr>`;
+        return;
+      }
+
+      const preview = filtered.slice().reverse().slice(0, 50);
+
+      tbody.innerHTML = preview.map(r => `
+        <tr>
+          <td><b>${esc(r.card_id)}</b></td>
+          <td>${esc(r.merchant_name || 'N/A')}</td>
+          <td>₹${esc(Number(r.amount_inr || 0).toLocaleString())}</td>
+          <td><span class="badge-risk ${(r.risk_level || 'low').toLowerCase()}">${esc(r.risk_level)}</span></td>
+          <td><b>${esc(r.decision)}</b></td>
+          <td><b>${r.operational_risk_score != null ? Number(r.operational_risk_score).toFixed(1) : 'N/A'}</b></td>
+        </tr>
+      `).join('');
+    }
+
+    function loadSessionDashboard() {
+      const history = getSessionHistory();
+
+      if (!history.length) {
+        // Initial Zero State
+        document.getElementById('kpiTotal').textContent = '0';
+        document.getElementById('kpiTotalVal').textContent = '₹0';
+        document.getElementById('kpiLow').textContent = '0';
+        document.getElementById('kpiMed').textContent = '0';
+        document.getElementById('kpiHigh').textContent = '0';
+        document.getElementById('kpiAvgScore').textContent = '0.0 / 100';
+
+        renderRecentTable([]);
+
+        if (distChartObj) distChartObj.destroy();
+        if (valueChartObj) valueChartObj.destroy();
+        if (trendChartObj) trendChartObj.destroy();
+
+        document.getElementById('distChartWrap').innerHTML = '<div class="empty-state">No transactions analyzed yet.</div>';
+        document.getElementById('valueChartWrap').innerHTML = '<div class="empty-state">No transactions analyzed yet.</div>';
+        document.getElementById('trendChartWrap').innerHTML = '<div class="empty-state">No transactions analyzed yet.</div>';
+        return;
+      }
+
+      // Re-create canvases if empty HTML state replaced them
+      if (!document.getElementById('riskDistChart')) {
+        document.getElementById('distChartWrap').innerHTML = '<canvas id="riskDistChart"></canvas>';
+        document.getElementById('valueChartWrap').innerHTML = '<canvas id="riskValueChart"></canvas>';
+        document.getElementById('trendChartWrap').innerHTML = '<canvas id="riskTrendChart"></canvas>';
+      }
+
+      const total = history.length;
+      const low = history.filter(x => x.risk_level === 'LOW').length;
+      const med = history.filter(x => x.risk_level === 'MEDIUM').length;
+      const high = history.filter(x => x.risk_level === 'HIGH').length;
+      const totalVal = history.reduce((a, b) => a + (Number(b.amount_inr) || 0), 0);
+      const avgScore = (history.reduce((a, b) => a + (Number(b.operational_risk_score) || 0), 0) / total).toFixed(1);
+
+      const lowVal = history.filter(x => x.risk_level === 'LOW').reduce((a, b) => a + (Number(b.amount_inr) || 0), 0);
+      const medVal = history.filter(x => x.risk_level === 'MEDIUM').reduce((a, b) => a + (Number(b.amount_inr) || 0), 0);
+      const highVal = history.filter(x => x.risk_level === 'HIGH').reduce((a, b) => a + (Number(b.amount_inr) || 0), 0);
+
+      document.getElementById('kpiTotal').textContent = total;
+      document.getElementById('kpiTotalVal').textContent = totalVal >= 100000 ? '₹' + (totalVal / 100000).toFixed(2) + 'L' : '₹' + totalVal.toLocaleString();
+      document.getElementById('kpiLow').textContent = low;
+      document.getElementById('kpiMed').textContent = med;
+      document.getElementById('kpiHigh').textContent = high;
+      document.getElementById('kpiAvgScore').textContent = avgScore + ' / 100';
+
+      renderRecentTable(history);
+
+      // Render Charts
+      if (distChartObj) distChartObj.destroy();
+      if (valueChartObj) valueChartObj.destroy();
+      if (trendChartObj) trendChartObj.destroy();
+
+      distChartObj = new Chart(document.getElementById('riskDistChart'), {
+        type: 'doughnut',
+        data: {
+          labels: ['LOW RISK', 'MEDIUM RISK', 'HIGH RISK'],
+          datasets: [{
+            data: [low, med, high],
+            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+            borderColor: '#0f172a',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'right' } }
+        }
+      });
+
+      valueChartObj = new Chart(document.getElementById('riskValueChart'), {
+        type: 'bar',
+        data: {
+          labels: ['LOW', 'MEDIUM', 'HIGH'],
+          datasets: [{
+            label: 'Total Value (₹)',
+            data: [lowVal, medVal, highVal],
+            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: '#1e293b' } }
+          }
+        }
+      });
+
+      const trendData = history.map(x => Number(x.operational_risk_score) || 0);
+      const labels = Array.from({ length: trendData.length }, (_, i) => `Tx ${i + 1}`);
+
+      trendChartObj = new Chart(document.getElementById('riskTrendChart'), {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Operational Risk Score',
+            data: trendData,
+            borderColor: '#38bdf8',
+            backgroundColor: 'rgba(56, 189, 248, 0.08)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: trendData.length > 50 ? 0 : 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: '#1e293b' }, min: 0, max: 100 }
+          }
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSessionDashboard();
+
+      ['dashFilterTier', 'dashFilterDecision'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => renderRecentTable(getSessionHistory()));
+      });
+
+      const resetBtn = document.getElementById('resetSessionBtn');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          if (confirm('Clear current screening session history? All session KPIs will return to zero.')) {
+            localStorage.removeItem('sentinelpay_session_history');
+            loadSessionDashboard();
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
