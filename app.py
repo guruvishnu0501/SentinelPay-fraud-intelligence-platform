@@ -237,7 +237,8 @@ def get_transaction_api(tx_id):
 
 @app.get('/api/transactions')
 def get_transactions_api():
-    txs = db_manager.get_recent_transactions(50)
+    limit = request.args.get('limit', 1000, type=int)
+    txs = db_manager.get_recent_transactions(limit)
     return jsonify({'ok': True, 'transactions': txs})
 
 @app.post('/api/clear-session')

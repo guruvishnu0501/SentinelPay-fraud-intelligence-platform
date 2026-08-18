@@ -124,27 +124,7 @@ if (btn) {
       const errorCount = summary.error_count != null ? summary.error_count : 0;
       const avgScore = summary.avg_risk_score != null ? summary.avg_risk_score : 'N/A';
 
-      // Push valid rows into session history
-      try {
-        const sessionHistory = JSON.parse(localStorage.getItem('sentinelpay_session_history') || '[]');
-        allBatchRows.forEach(r => {
-          if (r.decision !== 'INPUT ERROR') {
-            sessionHistory.push({
-              card_id: r.card_id,
-              trans_date_trans_time: r.trans_date_trans_time,
-              merchant_name: r.merchant_name,
-              amount_inr: r.amount_inr,
-              risk_level: r.risk_level,
-              decision: r.decision,
-              operational_risk_score: r.operational_risk_score,
-              ml_fraud_probability: r.ml_fraud_probability,
-              recommended_action: r.recommended_action
-            });
-          }
-        });
-        localStorage.setItem('sentinelpay_session_history', JSON.stringify(sessionHistory));
-        localStorage.removeItem('sentinelpay_session_cleared');
-      } catch (e) {}
+      localStorage.removeItem('sentinelpay_session_cleared');
 
       const merchantsList = Array.from(new Set(allBatchRows.map(r => r.merchant_name).filter(Boolean))).sort();
 

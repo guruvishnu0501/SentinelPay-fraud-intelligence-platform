@@ -300,7 +300,7 @@ class DatabaseManager:
             logger.error(f"Failed to fetch transaction from SQLite: {e}")
         return None
 
-    def get_recent_transactions(self, limit=50):
+    def get_recent_transactions(self, limit=1000):
         """Retrieve recent saved transactions."""
         results = []
         if self.use_mysql:

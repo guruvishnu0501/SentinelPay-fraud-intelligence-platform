@@ -129,21 +129,8 @@ function renderResult(r, p) {
     ${renderGroup('Geographic & Device Context', geoContext)}
   `;
 
-  // Push prediction record to session store
   try {
-    const sessionHistory = JSON.parse(localStorage.getItem('sentinelpay_session_history') || '[]');
-    sessionHistory.push({
-      card_id: p.card_id,
-      trans_date_trans_time: p.trans_date_trans_time,
-      merchant_name: p.merchant_name,
-      amount_inr: p.amount_inr,
-      risk_level: r.risk_level,
-      decision: r.decision,
-      operational_risk_score: r.operational_risk_score,
-      ml_fraud_probability: r.ml_fraud_probability,
-      recommended_action: r.recommended_action
-    });
-    localStorage.setItem('sentinelpay_session_history', JSON.stringify(sessionHistory));
+    sessionStorage.setItem('sentinelpay_last_analysis', JSON.stringify(r));
   } catch (e) {}
 }
 
@@ -166,24 +153,7 @@ if (form) {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error);
 
-      // Store prediction record in session history
       try {
-        const sessionHistory = JSON.parse(localStorage.getItem('sentinelpay_session_history') || '[]');
-        sessionHistory.push({
-          transaction_id: data.result.transaction_id,
-          card_id: payload.card_id,
-          trans_date_trans_time: payload.trans_date_trans_time,
-          merchant_name: payload.merchant_name,
-          merchant_category: payload.merchant_category,
-          amount_inr: payload.amount_inr,
-          risk_level: data.result.risk_level,
-          decision: data.result.decision,
-          operational_risk_score: data.result.operational_risk_score,
-          ml_fraud_probability: data.result.ml_fraud_probability,
-          recommended_action: data.result.recommended_action
-        });
-        localStorage.setItem('sentinelpay_session_history', JSON.stringify(sessionHistory));
-        localStorage.removeItem('sentinelpay_session_cleared');
         sessionStorage.setItem('sentinelpay_last_analysis', JSON.stringify(data.result));
       } catch (e) {}
 

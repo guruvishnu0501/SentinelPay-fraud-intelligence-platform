@@ -172,11 +172,21 @@
       }[m]));
     }
 
-    function getSessionHistory() {
+    let currentTransactions = [];
+
+    async function syncSharedDashboard() {
       try {
-        return JSON.parse(localStorage.getItem('sentinelpay_session_history') || '[]');
+        const res = await fetch('/api/transactions?limit=1000');
+        const data = await res.json();
+        if (data.ok && Array.isArray(data.transactions)) {
+          const newTxList = data.transactions;
+          // Reverse order so index 0 is oldest and last is newest for trends/KPIs
+          const normalizedTxList = newTxList.slice().reverse();
+          currentTransactions = normalizedTxList;
+          renderDashboardData(currentTransactions);
+        }
       } catch (e) {
-        return [];
+        console.error('Failed to sync shared dashboard:', e);
       }
     }
 
@@ -251,28 +261,8 @@
       }).join('');
     }
 
-    async function loadSessionDashboard(forceClear = false) {
-      let isCleared = localStorage.getItem('sentinelpay_session_cleared') === 'true';
-      if (forceClear) {
-        localStorage.setItem('sentinelpay_session_cleared', 'true');
-        isCleared = true;
-      }
-
-      let history = isCleared ? [] : getSessionHistory();
-
-      // Attempt DB sync if session history is empty and not explicitly cleared
-      if (!isCleared && !history.length) {
-        try {
-          const res = await fetch('/api/transactions');
-          const data = await res.json();
-          if (data.ok && data.transactions && data.transactions.length) {
-            history = data.transactions;
-            localStorage.setItem('sentinelpay_session_history', JSON.stringify(history));
-          }
-        } catch (e) {}
-      }
-
-      if (!history.length) {
+    function renderDashboardData(history) {
+      if (!history || !history.length) {
         // Initial Zero State
         document.getElementById('kpiTotal').textContent = '0';
         document.getElementById('kpiTotalVal').textContent = '₹0';
@@ -301,15 +291,15 @@
       }
 
       const total = history.length;
-      const low = history.filter(x => x.risk_level === 'LOW').length;
-      const med = history.filter(x => x.risk_level === 'MEDIUM').length;
-      const high = history.filter(x => x.risk_level === 'HIGH').length;
+      const low = history.filter(x => String(x.risk_level).toUpperCase() === 'LOW').length;
+      const med = history.filter(x => String(x.risk_level).toUpperCase() === 'MEDIUM').length;
+      const high = history.filter(x => String(x.risk_level).toUpperCase() === 'HIGH').length;
       const totalVal = history.reduce((a, b) => a + (Number(b.amount_inr) || 0), 0);
       const avgScore = (history.reduce((a, b) => a + (Number(b.operational_risk_score) || 0), 0) / total).toFixed(1);
 
-      const lowVal = history.filter(x => x.risk_level === 'LOW').reduce((a, b) => a + (Number(b.amount_inr) || 0), 0);
-      const medVal = history.filter(x => x.risk_level === 'MEDIUM').reduce((a, b) => a + (Number(b.amount_inr) || 0), 0);
-      const highVal = history.filter(x => x.risk_level === 'HIGH').reduce((a, b) => a + (Number(b.amount_inr) || 0), 0);
+      const lowVal = history.filter(x => String(x.risk_level).toUpperCase() === 'LOW').reduce((a, b) => a + (Number(b.amount_inr) || 0), 0);
+      const medVal = history.filter(x => String(x.risk_level).toUpperCase() === 'MEDIUM').reduce((a, b) => a + (Number(b.amount_inr) || 0), 0);
+      const highVal = history.filter(x => String(x.risk_level).toUpperCase() === 'HIGH').reduce((a, b) => a + (Number(b.amount_inr) || 0), 0);
 
       document.getElementById('kpiTotal').textContent = total;
       document.getElementById('kpiTotalVal').textContent = totalVal >= 100000 ? '₹' + (totalVal / 100000).toFixed(2) + 'L' : '₹' + totalVal.toLocaleString();
@@ -398,13 +388,23 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      loadSessionDashboard();
+      // Immediate sync from server database
+      syncSharedDashboard();
+
+      // Real-time auto-polling every 3 seconds to keep all devices/teammates in sync
+      setInterval(syncSharedDashboard, 3000);
+
+      // Re-sync when browser tab becomes active or focused
+      window.addEventListener('focus', syncSharedDashboard);
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) syncSharedDashboard();
+      });
 
       ['dashFilterTier', 'dashFilterDecision'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', () => {
           dashCurrentPage = 1;
-          renderRecentTable(getSessionHistory());
+          renderRecentTable(currentTransactions);
         });
       });
 
@@ -412,7 +412,7 @@
         btn.addEventListener('click', () => {
           if (dashCurrentPage > 1) {
             dashCurrentPage--;
-            renderRecentTable(getSessionHistory());
+            renderRecentTable(currentTransactions);
           }
         });
       });
@@ -420,19 +420,19 @@
       document.querySelectorAll('.dashNextBtn').forEach(btn => {
         btn.addEventListener('click', () => {
           dashCurrentPage++;
-          renderRecentTable(getSessionHistory());
+          renderRecentTable(currentTransactions);
         });
       });
 
       const resetBtn = document.getElementById('resetSessionBtn');
       if (resetBtn) {
         resetBtn.addEventListener('click', async () => {
-          localStorage.removeItem('sentinelpay_session_history');
+          localStorage.clear();
           sessionStorage.clear();
           try {
             await fetch('/api/clear-session', { method: 'POST' });
           } catch (e) {}
-          loadSessionDashboard(true);
+          await syncSharedDashboard();
         });
       }
     });
