@@ -8,6 +8,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from engine import FraudEngine
+from db import db_manager
 
 ROOT = Path(__file__).parent
 app = Flask(__name__)
@@ -184,7 +185,9 @@ def analyze():
     try:
         data = request.get_json(force=True)
         debug_flag = request.args.get('debug', 'false').lower() == 'true' or request.headers.get('X-Debug-Mode', '').lower() == 'true'
-        return jsonify({'ok': True, 'result': engine.analyze(data, debug=debug_flag)})
+        res = engine.analyze(data, debug=debug_flag)
+        db_manager.save_transaction(res)
+        return jsonify({'ok': True, 'result': res})
     except Exception as e:
         return jsonify({'ok': False, 'error': str(e)}), 400
 
@@ -275,6 +278,8 @@ def batch_analyze():
             for k, v in r.items():
                 if pd.isna(v):
                     r[k] = None
+        
+        db_manager.save_batch_transactions(rows_list)
         
         return jsonify({
             'ok': True,

@@ -1,6 +1,13 @@
 # Local training dataset (Kept locally, excluded from GitHub)
 Dataset.csv
 
+# Local SQLite & MySQL data files
+*.db
+sentinelpay.db
+
+# Generated PDF Reports & Viva Guides
+*.pdf
+
 # Python compiled files & caches
 __pycache__/
 *.py[cod]
@@ -9,7 +16,7 @@ __pycache__/
 *.dll
 *.dylib
 
-# Environment & IDE
+# Environment & Credentials (NEVER committed to GitHub)
 .env
 .venv/
 venv/
