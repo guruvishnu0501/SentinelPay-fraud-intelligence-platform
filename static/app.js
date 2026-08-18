@@ -150,8 +150,11 @@ function renderResult(r, p) {
 if (form) {
   form.addEventListener('submit', async e => {
     e.preventDefault();
-    result.classList.remove('hidden');
-    result.innerHTML = '<div class="empty-state">Evaluating transaction through SentinelPay Risk Engine…</div>';
+    const btn = document.getElementById('analyzeBtn');
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Analyzing…';
+    }
     
     try {
       const payload = getPayload();
@@ -162,9 +165,36 @@ if (form) {
       });
       const data = await res.json();
       if (!data.ok) throw new Error(data.error);
-      renderResult(data.result, payload);
+
+      // Store prediction record in session history
+      try {
+        const sessionHistory = JSON.parse(localStorage.getItem('sentinelpay_session_history') || '[]');
+        sessionHistory.push({
+          transaction_id: data.result.transaction_id,
+          card_id: payload.card_id,
+          trans_date_trans_time: payload.trans_date_trans_time,
+          merchant_name: payload.merchant_name,
+          merchant_category: payload.merchant_category,
+          amount_inr: payload.amount_inr,
+          risk_level: data.result.risk_level,
+          decision: data.result.decision,
+          operational_risk_score: data.result.operational_risk_score,
+          ml_fraud_probability: data.result.ml_fraud_probability,
+          recommended_action: data.result.recommended_action
+        });
+        localStorage.setItem('sentinelpay_session_history', JSON.stringify(sessionHistory));
+        localStorage.removeItem('sentinelpay_session_cleared');
+        sessionStorage.setItem('sentinelpay_last_analysis', JSON.stringify(data.result));
+      } catch (e) {}
+
+      const txId = data.result.transaction_id || payload.card_id;
+      window.location.href = `/investigation?id=${encodeURIComponent(txId)}`;
     } catch (err) {
-      result.innerHTML = `<div class="reason-item" style="border-color: var(--high-red);"><p><b>Assessment Error:</b> ${esc(err.message)}</p></div>`;
+      alert('Assessment Error: ' + err.message);
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Analyze';
+      }
     }
   });
 }

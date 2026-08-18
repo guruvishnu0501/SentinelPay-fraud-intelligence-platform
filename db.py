@@ -214,5 +214,105 @@ class DatabaseManager:
         for tx_res in tx_list:
             self.save_transaction(tx_res)
 
+    def _row_to_dict(self, row):
+        if not row:
+            return None
+        # Handle dict (MySQL) or tuple (SQLite)
+        if isinstance(row, dict):
+            d = dict(row)
+        else:
+            cols = ["id", "transaction_id", "card_id", "trans_date_trans_time", "amount_inr",
+                    "merchant_name", "merchant_category", "channel", "ip_country",
+                    "transaction_city", "device_id", "ml_fraud_probability",
+                    "operational_risk_score", "risk_level", "decision",
+                    "recommended_action", "reasons", "created_at"]
+            d = dict(zip(cols, row))
+        
+        reasons_val = d.get("reasons")
+        if isinstance(reasons_val, str):
+            try:
+                d["reasons"] = json.loads(reasons_val)
+            except Exception:
+                d["reasons"] = [reasons_val] if reasons_val else []
+        elif not isinstance(reasons_val, list):
+            d["reasons"] = []
+            
+        return d
+
+    def get_transaction(self, tx_id):
+        """Retrieve a saved transaction by transaction_id."""
+        if not tx_id:
+            return None
+
+        if self.use_mysql:
+            try:
+                conn = self._get_mysql_connection(select_db=True)
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT * FROM transactions WHERE transaction_id = %s LIMIT 1", (tx_id,))
+                    row = cursor.fetchone()
+                conn.close()
+                return self._row_to_dict(row) if row else None
+            except Exception as e:
+                logger.error(f"Failed to fetch transaction from MySQL: {e}")
+
+        # SQLite Fallback
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM transactions WHERE transaction_id = ? LIMIT 1", (tx_id,))
+            row = cursor.fetchone()
+            conn.close()
+            return self._row_to_dict(row) if row else None
+        except Exception as e:
+            logger.error(f"Failed to fetch transaction from SQLite: {e}")
+        return None
+
+    def get_recent_transactions(self, limit=50):
+        """Retrieve recent saved transactions."""
+        results = []
+        if self.use_mysql:
+            try:
+                conn = self._get_mysql_connection(select_db=True)
+                with conn.cursor() as cursor:
+                    cursor.execute("SELECT * FROM transactions ORDER BY id DESC LIMIT %s", (limit,))
+                    rows = cursor.fetchall()
+                conn.close()
+                return [self._row_to_dict(r) for r in rows if r]
+            except Exception as e:
+                logger.error(f"Failed to fetch recent transactions from MySQL: {e}")
+
+        # SQLite Fallback
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM transactions ORDER BY id DESC LIMIT ?", (limit,))
+            rows = cursor.fetchall()
+            conn.close()
+            return [self._row_to_dict(r) for r in rows if r]
+        except Exception as e:
+            logger.error(f"Failed to fetch recent transactions from SQLite: {e}")
+        return results
+
+    def clear_transactions(self):
+        """Clear all stored transactions for session reset."""
+        if self.use_mysql:
+            try:
+                conn = self._get_mysql_connection(select_db=True)
+                with conn.cursor() as cursor:
+                    cursor.execute("TRUNCATE TABLE transactions;")
+                conn.close()
+                return
+            except Exception as e:
+                logger.error(f"Failed to clear transactions from MySQL: {e}")
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM transactions;")
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            logger.error(f"Failed to clear transactions from SQLite: {e}")
+
 # Instantiate singleton DB manager
 db_manager = DatabaseManager()
+

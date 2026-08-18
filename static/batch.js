@@ -143,6 +143,7 @@ if (btn) {
           }
         });
         localStorage.setItem('sentinelpay_session_history', JSON.stringify(sessionHistory));
+        localStorage.removeItem('sentinelpay_session_cleared');
       } catch (e) {}
 
       const merchantsList = Array.from(new Set(allBatchRows.map(r => r.merchant_name).filter(Boolean))).sort();

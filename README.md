@@ -108,8 +108,8 @@ sentinelpay/
 ├── templates/                 # HTML templates
 │   ├── dashboard.html         # Live session analytics dashboard
 │   ├── index.html             # Transaction Risk Assessment page
+│   ├── investigation.html     # Dedicated Fraud Investigation Report page
 │   ├── batch.html             # Batch CSV Screening page
-│   ├── fraud_intelligence.html# Fraud Intelligence overview
 │   └── model.html             # Model & Technology documentation
 │
 ├── static/                    # CSS & JavaScript assets
@@ -142,14 +142,17 @@ Batch files uploaded to `/batch` or `POST /api/batch` must contain the following
 
 - `GET /` — Live Session Dashboard UI
 - `GET /screen` — Single Transaction Risk Assessment UI
+- `GET /investigation` — Fraud Investigation Report UI
 - `GET /batch` — Batch CSV Screening UI
-- `GET /fraud-intelligence` — Fraud Intelligence Overview
 - `GET /model` — Model & Technology Documentation
+- `GET /api/transaction/<tx_id>` — Fetch saved transaction details
+- `GET /api/transactions` — Fetch recent transactions from database
 - `GET /api/options` — Form options metadata (cities, merchants, channels, countries)
 - `GET /api/template.csv` — Downloadable input CSV template
 - `POST /api/analyze` — Single transaction risk analysis endpoint
 - `POST /api/batch` — CSV batch screening endpoint (chronological execution)
 - `POST /api/report` — One-click downloadable PDF risk report
+- `POST /api/clear-session` — Clear session history & DB records
 
 ---
 

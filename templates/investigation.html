@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SentinelPay — Transaction Investigation</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .report-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .report-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    
+    .report-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    
+    .report-logo-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #4f46e5, #2563eb);
+      color: white;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+    }
+    
+    .report-brand-text h2 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      color: var(--text-main);
+    }
+    
+    .report-brand-text p {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    
+    .report-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      text-align: right;
+    }
+    
+    .report-meta b {
+      color: var(--text-main);
+    }
+
+    .executive-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .executive-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .executive-card .lbl {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .executive-card .val {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+
+    /* Risk indicator bar */
+    .risk-bar-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 32px;
+    }
+
+    .risk-bar-track {
+      height: 12px;
+      width: 100%;
+      background: linear-gradient(to right, #10b981 0%, #10b981 40%, #f59e0b 40%, #f59e0b 70%, #ef4444 70%, #ef4444 100%);
+      border-radius: 999px;
+      position: relative;
+    }
+
+    .risk-bar-marker {
+      position: absolute;
+      top: -8px;
+      width: 0;
+      height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 10px solid var(--text-main);
+      transform: translateX(-50%);
+      transition: left 0.3s ease;
+    }
+
+    /* Attributes two column table */
+    .attr-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .attr-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-card);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .attr-table tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .attr-table tr:last-child {
+      border-bottom: none;
+    }
+
+    .attr-table td {
+      padding: 12px 16px;
+      font-size: 13px;
+    }
+
+    .attr-table td.lbl {
+      color: var(--text-muted);
+      font-weight: 600;
+      width: 45%;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .attr-table td.val {
+      color: var(--text-main);
+      font-weight: 500;
+    }
+
+    @media (max-width: 800px) {
+      .executive-grid { grid-template-columns: 1fr 1fr; }
+      .attr-grid { grid-template-columns: 1fr; }
+      .report-meta { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="nav-header">
+      <div class="brand-block">
+        <div class="brand-title">SENTINELPAY</div>
+        <div class="status-badge"><span class="dot"></span> System Operational</div>
+      </div>
+      <nav class="main-nav">
+        <a href="/">Dashboard</a>
+        <a href="/screen">Transaction Screening</a>
+        <a href="/batch">Batch Analysis</a>
+        <a href="/model">Model &amp; Technology</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="report-card">
+        <!-- Header Section -->
+        <div class="report-header">
+          <div class="report-brand">
+            <div class="report-logo-icon">S</div>
+            <div class="report-brand-text">
+              <h2>SENTINELPAY AI</h2>
+              <p>Fraud Investigation Report</p>
+            </div>
+          </div>
+          
+          <div class="report-meta">
+            <div>Report ID: <b id="invReportId">Loading...</b></div>
+            <div>Generated: <b id="invTimestamp">Loading...</b></div>
+            <div>Engine: <b>XGBoost Classifier (Production)</b></div>
+          </div>
+
+          <div>
+            <span id="invRiskBadge" class="badge-risk low">LOW RISK</span>
+          </div>
+        </div>
+
+        <!-- Section 1: Executive Decision Summary -->
+        <div class="section-title">1. Executive Decision Summary</div>
+        
+        <div class="executive-grid">
+          <div class="executive-card">
+            <div class="lbl">Model Decision</div>
+            <div class="val" id="invDecision">—</div>
+          </div>
+          <div class="executive-card">
+            <div class="lbl">Fraud Probability</div>
+            <div class="val" id="invProbability">—</div>
+          </div>
+          <div class="executive-card">
+            <div class="lbl">Risk Tier</div>
+            <div class="val" id="invRiskTier">—</div>
+          </div>
+          <div class="executive-card">
+            <div class="lbl">Recommended Action</div>
+            <div class="val" id="invAction" style="font-size: 15px; font-weight: 800;">—</div>
+          </div>
+        </div>
+
+        <!-- Risk Bar Indicator -->
+        <div class="risk-bar-container">
+          <div class="risk-bar-track">
+            <div class="risk-bar-marker" id="riskMarker" style="left: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Section 2: Transaction Attributes Summary -->
+        <div class="section-title">2. Transaction Attributes Summary</div>
+        
+        <div class="attr-grid">
+          <table class="attr-table">
+            <tbody>
+              <tr>
+                <td class="lbl">Transaction ID</td>
+                <td class="val" id="invTxId">—</td>
+              </tr>
+              <tr>
+                <td class="lbl">Merchant Name</td>
+                <td class="val" id="invMerchant">—</td>
+              </tr>
+              <tr>
+                <td class="lbl">Customer Account ID</td>
+                <td class="val" id="invCardId">—</td>
+              </tr>
+              <tr>
+                <td class="lbl">Transaction Location</td>
+                <td class="val" id="invLocation">—</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <table class="attr-table">
+            <tbody>
+              <tr>
+                <td class="lbl">Transaction Amount</td>
+                <td class="val" id="invAmount">—</td>
+              </tr>
+              <tr>
+                <td class="lbl">Category</td>
+                <td class="val" id="invCategory">—</td>
+              </tr>
+              <tr>
+                <td class="lbl">Transaction Timestamp</td>
+                <td class="val" id="invTxTimestamp">—</td>
+              </tr>
+              <tr>
+                <td class="lbl">Investigation Priority</td>
+                <td class="val" id="invPriority">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Section 3: Investigation Report Action -->
+        <div style="display: flex; justify-content: flex-start; gap: 12px; margin-top: 16px;">
+          <button id="downloadPdfBtn" class="btn btn-primary">Download Investigation Report</button>
+          <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    let currentTxData = null;
+
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    function formatShortDecision(dec, riskLevel) {
+      const d = String(dec || '').toUpperCase();
+      const r = String(riskLevel || '').toUpperCase();
+      if (r === 'HIGH' || d.includes('FRAUD') || d.includes('HIGH') || d.includes('BLOCK')) return 'FRAUD';
+      if (r === 'MEDIUM' || d.includes('SUSPICIOUS') || d.includes('MEDIUM') || d.includes('STEP')) return 'SUSPICIOUS';
+      return 'GENUINE';
+    }
+
+    async function loadInvestigationData() {
+      const txId = getQueryParam('id');
+      
+      if (txId) {
+        // 1. Try API fetch
+        try {
+          const res = await fetch(`/api/transaction/${encodeURIComponent(txId)}`);
+          const data = await res.json();
+          if (data.ok && data.result) {
+            currentTxData = data.result;
+            renderInvestigation(currentTxData);
+            return;
+          }
+        } catch (e) {
+          console.warn('API lookup failed', e);
+        }
+
+        // 2. Try localStorage session history match
+        try {
+          const history = JSON.parse(localStorage.getItem('sentinelpay_session_history') || '[]');
+          const match = history.find(r => 
+            r.transaction_id === txId || 
+            r.card_id === txId || 
+            (r.transaction_id && txId.includes(r.transaction_id)) ||
+            (r.card_id && txId.includes(r.card_id))
+          );
+          if (match) {
+            currentTxData = match;
+            renderInvestigation(currentTxData);
+            return;
+          }
+        } catch (e) {}
+
+        // 3. Try sessionStorage last_analysis match
+        try {
+          const lastTx = JSON.parse(sessionStorage.getItem('sentinelpay_last_analysis') || 'null');
+          if (lastTx && (lastTx.transaction_id === txId || lastTx.card_id === txId)) {
+            currentTxData = lastTx;
+            renderInvestigation(currentTxData);
+            return;
+          }
+        } catch (e) {}
+      } else {
+        // No ID param, try last analyzed transaction
+        try {
+          const lastTx = JSON.parse(sessionStorage.getItem('sentinelpay_last_analysis') || 'null');
+          if (lastTx) {
+            currentTxData = lastTx;
+            renderInvestigation(currentTxData);
+            return;
+          }
+        } catch (e) {}
+      }
+
+      // Empty state if transaction not found anywhere
+      document.querySelector('.report-card').innerHTML = `
+        <div class="empty-state">
+          <h3>Transaction Record Not Found</h3>
+          <p style="margin-top: 8px; color: var(--text-muted);">The requested transaction ID ("${txId || ''}") could not be located in database or session history.</p>
+          <div style="margin-top: 20px;">
+            <a href="/" class="btn btn-primary">Go to Dashboard</a>
+            <a href="/screen" class="btn btn-secondary" style="margin-left: 10px;">Transaction Screening</a>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderInvestigation(data) {
+      const txId = data.transaction_id || ('TXN-' + (data.card_id || 'DEMO'));
+      const reportId = txId.startsWith('REP-') ? txId : ('REP-' + txId);
+      const timestamp = data.trans_date_trans_time || data.created_at || new Date().toLocaleString();
+      const prob = data.ml_fraud_probability != null ? Number(data.ml_fraud_probability) : 0.0;
+      const probPct = (prob * 100).toFixed(2) + '%';
+      const riskLevel = (data.risk_level || (prob > 0.45 ? 'HIGH' : (prob > 0.20 ? 'MEDIUM' : 'LOW'))).toUpperCase();
+      const shortDec = formatShortDecision(data.decision, riskLevel);
+      const amount = data.amount_inr != null ? Number(data.amount_inr) : 0.0;
+      const threshold = '0.27';
+      const priority = riskLevel === 'HIGH' ? 'Critical' : (riskLevel === 'MEDIUM' ? 'Elevated' : 'Standard');
+      const location = (data.transaction_city || 'Hyderabad') + (data.ip_country ? (', ' + data.ip_country) : '');
+
+      document.getElementById('invReportId').textContent = reportId;
+      document.getElementById('invTimestamp').textContent = timestamp;
+      document.getElementById('invTxId').textContent = txId;
+      document.getElementById('invMerchant').textContent = data.merchant_name || 'N/A';
+      document.getElementById('invCardId').textContent = data.card_id || 'N/A';
+      document.getElementById('invLocation').textContent = location;
+      document.getElementById('invAmount').textContent = '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('invCategory').textContent = data.merchant_category || 'N/A';
+      document.getElementById('invTxTimestamp').textContent = data.trans_date_trans_time || 'N/A';
+      document.getElementById('invPriority').textContent = priority;
+
+      let actionText = (data.recommended_action || '').toUpperCase();
+      let actionColor = 'var(--low-green)';
+      if (riskLevel === 'HIGH' || actionText.includes('BLOCK')) {
+        actionText = 'BLOCK';
+        actionColor = 'var(--high-red)';
+      } else if (riskLevel === 'MEDIUM' || actionText.includes('STEP-UP') || actionText.includes('REVIEW')) {
+        actionText = 'STEP-UP AUTHENTICATION';
+        actionColor = 'var(--med-amber)';
+      } else {
+        actionText = 'ALLOW';
+        actionColor = 'var(--low-green)';
+      }
+
+      document.getElementById('invDecision').textContent = shortDec;
+      document.getElementById('invProbability').textContent = probPct;
+      document.getElementById('invRiskTier').textContent = riskLevel;
+      
+      const actionEl = document.getElementById('invAction');
+      if (actionEl) {
+        actionEl.innerHTML = `<span style="color: ${actionColor}; font-weight: 800; font-size: 14px;">${actionText}</span>`;
+      }
+
+      const badge = document.getElementById('invRiskBadge');
+      badge.textContent = riskLevel + ' RISK';
+      badge.className = 'badge-risk ' + riskLevel.toLowerCase();
+
+      // Position risk bar marker
+      const markerPos = Math.max(0, Math.min(100, prob * 100));
+      document.getElementById('riskMarker').style.left = markerPos + '%';
+    }
+
+    document.getElementById('downloadPdfBtn').addEventListener('click', async () => {
+      if (!currentTxData) {
+        alert('No transaction data available for PDF generation.');
+        return;
+      }
+      try {
+        const btn = document.getElementById('downloadPdfBtn');
+        btn.disabled = true;
+        btn.textContent = 'Generating PDF…';
+
+        const res = await fetch('/api/report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentTxData)
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || 'PDF Generation failed');
+        }
+
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const txId = currentTxData.transaction_id || 'TXN';
+        a.download = `sentinelpay_report_${txId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        btn.disabled = false;
+        btn.textContent = 'Download Investigation Report';
+      } catch (err) {
+        alert('PDF Generation error: ' + err.message);
+        const btn = document.getElementById('downloadPdfBtn');
+        btn.disabled = false;
+        btn.textContent = 'Download Investigation Report';
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', loadInvestigationData);
+  </script>
+</body>
+</html>

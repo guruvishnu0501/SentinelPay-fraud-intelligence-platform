@@ -18,7 +18,6 @@
         <a class="active" href="/">Dashboard</a>
         <a href="/screen">Transaction Screening</a>
         <a href="/batch">Batch Analysis</a>
-        <a href="/fraud-intelligence">Fraud Intelligence</a>
         <a href="/model">Model &amp; Technology</a>
       </nav>
     </header>
@@ -127,17 +126,19 @@
           <table>
             <thead>
               <tr>
+                <th>Transaction ID</th>
                 <th>Card ID</th>
                 <th>Merchant</th>
                 <th>Amount (₹)</th>
                 <th>Risk Tier</th>
                 <th>Decision</th>
                 <th>Risk Score</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody id="recentBody">
               <tr>
-                <td colspan="6" class="empty-state">No transactions analyzed in current session yet.</td>
+                <td colspan="8" class="empty-state">No transactions analyzed in current session yet.</td>
               </tr>
             </tbody>
           </table>
@@ -221,24 +222,55 @@
       nextBtns.forEach(btn => btn.disabled = dashCurrentPage >= totalPages);
 
       if (!totalItems) {
-        tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${history.length ? 'No transactions match selected filter' : 'No transactions analyzed in current session yet.'}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="empty-state">${history.length ? 'No transactions match selected filter' : 'No transactions analyzed yet.'}</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = pageItems.map(r => `
-        <tr>
-          <td><b>${esc(r.card_id)}</b></td>
-          <td>${esc(r.merchant_name || 'N/A')}</td>
-          <td>₹${esc(Number(r.amount_inr || 0).toLocaleString())}</td>
-          <td><span class="badge-risk ${(r.risk_level || 'low').toLowerCase()}">${esc(r.risk_level)}</span></td>
-          <td><b>${esc(r.decision)}</b></td>
-          <td><b>${r.operational_risk_score != null ? Number(r.operational_risk_score).toFixed(1) : 'N/A'}</b></td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = pageItems.map(r => {
+        const txId = r.transaction_id || ('TXN-' + r.card_id);
+        const rLevel = String(r.risk_level || 'LOW').toUpperCase();
+        const rDec = String(r.decision || '').toUpperCase();
+        let shortDec = 'GENUINE';
+        if (rLevel === 'HIGH' || rDec.includes('FRAUD') || rDec.includes('HIGH') || rDec.includes('BLOCK')) {
+          shortDec = 'FRAUD';
+        } else if (rLevel === 'MEDIUM' || rDec.includes('SUSPICIOUS') || rDec.includes('MEDIUM') || rDec.includes('STEP')) {
+          shortDec = 'SUSPICIOUS';
+        }
+        return `
+          <tr style="cursor: pointer;" onclick="if(event.target.tagName !== 'A' && event.target.tagName !== 'BUTTON') window.location.href='/investigation?id=${encodeURIComponent(txId)}';">
+            <td><a href="/investigation?id=${encodeURIComponent(txId)}" style="color: var(--accent); text-decoration: none; font-weight: 700;">${esc(txId)}</a></td>
+            <td><b>${esc(r.card_id)}</b></td>
+            <td>${esc(r.merchant_name || 'N/A')}</td>
+            <td>₹${esc(Number(r.amount_inr || 0).toLocaleString())}</td>
+            <td><span class="badge-risk ${rLevel.toLowerCase()}">${esc(rLevel)} RISK</span></td>
+            <td><b>${esc(shortDec)}</b></td>
+            <td><b>${r.operational_risk_score != null ? Number(r.operational_risk_score).toFixed(1) : 'N/A'}</b></td>
+            <td><a href="/investigation?id=${encodeURIComponent(txId)}" class="btn btn-secondary" style="font-size: 11px; padding: 4px 10px;">Investigate →</a></td>
+          </tr>
+        `;
+      }).join('');
     }
 
-    function loadSessionDashboard() {
-      const history = getSessionHistory();
+    async function loadSessionDashboard(forceClear = false) {
+      let isCleared = localStorage.getItem('sentinelpay_session_cleared') === 'true';
+      if (forceClear) {
+        localStorage.setItem('sentinelpay_session_cleared', 'true');
+        isCleared = true;
+      }
+
+      let history = isCleared ? [] : getSessionHistory();
+
+      // Attempt DB sync if session history is empty and not explicitly cleared
+      if (!isCleared && !history.length) {
+        try {
+          const res = await fetch('/api/transactions');
+          const data = await res.json();
+          if (data.ok && data.transactions && data.transactions.length) {
+            history = data.transactions;
+            localStorage.setItem('sentinelpay_session_history', JSON.stringify(history));
+          }
+        } catch (e) {}
+      }
 
       if (!history.length) {
         // Initial Zero State
@@ -305,6 +337,7 @@
           }]
         },
         options: {
+          animation: { duration: 150 },
           responsive: true,
           maintainAspectRatio: false,
           plugins: { legend: { position: 'right' } }
@@ -323,6 +356,7 @@
           }]
         },
         options: {
+          animation: { duration: 150 },
           responsive: true,
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
@@ -351,6 +385,7 @@
           }]
         },
         options: {
+          animation: { duration: 150 },
           responsive: true,
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
@@ -391,11 +426,13 @@
 
       const resetBtn = document.getElementById('resetSessionBtn');
       if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-          if (confirm('Clear current screening session history? All session KPIs will return to zero.')) {
-            localStorage.removeItem('sentinelpay_session_history');
-            loadSessionDashboard();
-          }
+        resetBtn.addEventListener('click', async () => {
+          localStorage.removeItem('sentinelpay_session_history');
+          sessionStorage.clear();
+          try {
+            await fetch('/api/clear-session', { method: 'POST' });
+          } catch (e) {}
+          loadSessionDashboard(true);
         });
       }
     });

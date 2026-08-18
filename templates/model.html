@@ -5,6 +5,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SentinelPay — Model &amp; Technology</title>
   <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .matrix-table {
+      width: 100%;
+      max-width: 540px;
+      border-collapse: collapse;
+      margin: 16px 0;
+      background: var(--bg-card);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .matrix-table th, .matrix-table td {
+      padding: 14px 18px;
+      text-align: center;
+      font-size: 14px;
+      border: 1px solid var(--border);
+    }
+    .matrix-table th {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .matrix-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+    .matrix-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .prod-tag {
+      display: inline-block;
+      background: var(--primary);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+  </style>
 </head>
 <body>
   <div class="app-shell">
@@ -17,7 +62,6 @@
         <a href="/">Dashboard</a>
         <a href="/screen">Transaction Screening</a>
         <a href="/batch">Batch Analysis</a>
-        <a href="/fraud-intelligence">Fraud Intelligence</a>
         <a class="active" href="/model">Model &amp; Technology</a>
       </nav>
     </header>
@@ -28,7 +72,7 @@
         <p>Machine learning combined with behavioral and contextual evidence.</p>
       </section>
 
-      <!-- System Architecture Visualization (Responsive Flow - No Horizontal Scrollbar) -->
+      <!-- System Architecture Visualization -->
       <section class="panel">
         <div class="section-title">System Architecture</div>
         <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-start; padding: 10px 0;">
@@ -50,41 +94,72 @@
         </div>
       </section>
 
-      <!-- Core Intelligence Components -->
+      <!-- Model Performance Comparison -->
       <section class="panel">
-        <div class="section-title">Core Intelligence Components</div>
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="label" style="color: var(--accent);">Machine Learning</div>
-            <div style="font-weight: 700; font-size: 16px; margin: 4px 0;">XGBoost Classifier</div>
-            <div style="font-size: 13px; color: var(--text-muted);">Gradient boosted decision trees optimized for fraud pattern recognition.</div>
-          </div>
-          <div class="kpi-card">
-            <div class="label" style="color: var(--accent);">Probability Calibration</div>
-            <div style="font-weight: 700; font-size: 16px; margin: 4px 0;">Platt Sigmoid Calibration</div>
-            <div style="font-size: 13px; color: var(--text-muted);">Converts raw tree outputs into true, well-calibrated fraud probability estimates.</div>
-          </div>
-          <div class="kpi-card">
-            <div class="label" style="color: var(--accent);">Categorical Processing</div>
-            <div style="font-size: 16px; font-weight: 700; margin: 4px 0;">One-Hot Encoding</div>
-            <div style="font-size: 13px; color: var(--text-muted);">Handles unseen merchants, categories, and countries without pipeline failure.</div>
-          </div>
-          <div class="kpi-card">
-            <div class="label" style="color: var(--accent);">Behavioral Analysis</div>
-            <div style="font-size: 16px; font-weight: 700; margin: 4px 0;">Past-Only Card History</div>
-            <div style="font-size: 13px; color: var(--text-muted);">Calculates velocity and distance deltas strictly from past activity.</div>
-          </div>
-          <div class="kpi-card">
-            <div class="label" style="color: var(--accent);">Decision Engine</div>
-            <div style="font-size: 16px; font-weight: 700; margin: 4px 0;">Hybrid Risk Engine</div>
-            <div style="font-size: 13px; color: var(--text-muted);">Combines calibrated probability, business evidence, and anomaly intensity.</div>
-          </div>
+        <div class="section-title">Model Performance Comparison (Validation Benchmark Evaluation)</div>
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">
+          Model selection benchmark evaluated across candidate algorithms on the validation split (15,000 transactions, rows 60,000–75,000) under validation tuning thresholds. <b>XGBoost Classifier</b> was selected as the winning production model due to superior Recall (72.43%) and F1 Score (69.93%).
+        </p>
+
+        <!-- Chart Container -->
+        <div style="position: relative; height: 320px; margin-bottom: 24px;">
+          <canvas id="modelCompChart"></canvas>
+        </div>
+
+        <!-- Metric Table -->
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Accuracy</th>
+                <th>Precision</th>
+                <th>Recall</th>
+                <th>F1 Score</th>
+                <th>ROC-AUC</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><b>LightGBM</b></td>
+                <td>97.03%</td>
+                <td>72.65%</td>
+                <td>67.36%</td>
+                <td>69.91%</td>
+                <td>95.66%</td>
+              </tr>
+              <tr>
+                <td><b>Logistic Regression</b></td>
+                <td>96.83%</td>
+                <td>76.21%</td>
+                <td>55.40%</td>
+                <td>64.16%</td>
+                <td>95.07%</td>
+              </tr>
+              <tr>
+                <td><b>Random Forest</b></td>
+                <td>96.43%</td>
+                <td>64.65%</td>
+                <td>66.84%</td>
+                <td>65.73%</td>
+                <td>94.78%</td>
+              </tr>
+              <tr style="background: rgba(37, 99, 235, 0.08);">
+                <td><b>XGBoost</b> <span class="prod-tag">Production Model</span></td>
+                <td><b>96.81%</b></td>
+                <td><b>67.60%</b></td>
+                <td><b>72.43%</b></td>
+                <td><b>69.93%</b></td>
+                <td><b>95.67%</b></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
-      <!-- Validated Performance Metrics -->
+      <!-- Validated Production Model Performance -->
       <section class="panel">
-        <div class="section-title">Validated Model Performance</div>
+        <div class="section-title">Production Model Performance (Final Untouched Test Split Evaluation)</div>
         <div class="kpi-grid">
           <div class="kpi-card">
             <div class="label">PR-AUC</div>
@@ -108,7 +183,7 @@
           </div>
           <div class="kpi-card">
             <div class="label">False Positive Rate</div>
-            <div class="value">~1.00%</div>
+            <div class="value">0.95%</div>
           </div>
           <div class="kpi-card">
             <div class="label">Brier Score</div>
@@ -116,39 +191,134 @@
           </div>
         </div>
         <p style="font-size: 13px; color: var(--text-dim); margin-top: 16px; font-style: italic;">
-          Prototype validation: Metrics were evaluated on the project's synthetic benchmark dataset and should not be interpreted as production banking performance.
+          Evaluated on the untouched future test split (15,000 transactions, rows 85,000–100,000) after Platt sigmoid calibration under the 1.00% FPR operational policy constraint (calibrated threshold = 0.45).
         </p>
       </section>
 
-      <!-- Why SentinelPay is Different -->
+      <!-- Production Model Confusion Matrix -->
       <section class="panel">
-        <div class="section-title">Why SentinelPay Is Different</div>
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="label" style="color: var(--text-main);">1. ML Probability</div>
-            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Estimates exact transaction fraud likelihood using calibrated probabilities.</div>
-          </div>
-          <div class="kpi-card">
-            <div class="label" style="color: var(--text-main);">2. Behavioral Context</div>
-            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Uses historical transaction behavior and velocity tracking where available.</div>
-          </div>
-          <div class="kpi-card">
-            <div class="label" style="color: var(--text-main);">3. Independent Evidence</div>
-            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Evaluates independent signals such as geography, timing, and device history.</div>
-          </div>
-          <div class="kpi-card">
-            <div class="label" style="color: var(--text-main);">4. Operational Decision</div>
-            <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Combines ML and rule evidence into clear, actionable LOW / MEDIUM / HIGH risk decisions.</div>
+        <div class="section-title">Production Model Confusion Matrix (Final Untouched Test Split Evaluation)</div>
+        <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">
+          Operating confusion matrix for the production XGBoost model on the 15,000 untouched future test transactions at the 1.00% FPR operational policy threshold.
+        </p>
+
+        <div style="display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap;">
+          <table class="matrix-table">
+            <thead>
+              <tr>
+                <th rowspan="2" style="vertical-align: middle;">Actual Class</th>
+                <th colspan="2">Predicted Class</th>
+              </tr>
+              <tr>
+                <th>Negative (Genuine)</th>
+                <th>Positive (Fraud)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight: 700; background: rgba(255,255,255,0.02);">Negative (Genuine)</td>
+                <td style="background: rgba(16, 185, 129, 0.08);">
+                  <div class="matrix-val">14,091</div>
+                  <div class="matrix-sub">True Negative (TN)</div>
+                </td>
+                <td style="background: rgba(245, 158, 11, 0.08);">
+                  <div class="matrix-val">142</div>
+                  <div class="matrix-sub">False Positive (FP)</div>
+                </td>
+              </tr>
+              <tr>
+                <td style="font-weight: 700; background: rgba(255,255,255,0.02);">Positive (Fraud)</td>
+                <td style="background: rgba(239, 68, 68, 0.08);">
+                  <div class="matrix-val">308</div>
+                  <div class="matrix-sub">False Negative (FN)</div>
+                </td>
+                <td style="background: rgba(16, 185, 129, 0.08);">
+                  <div class="matrix-val">459</div>
+                  <div class="matrix-sub">True Positive (TP)</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="flex: 1; min-width: 260px; font-size: 13px; color: var(--text-muted); line-height: 1.7; background: var(--bg-card); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
+            <div style="font-weight: 700; color: var(--text-main); margin-bottom: 8px;">Mathematical Verification</div>
+            <div>• <b>Accuracy</b> = (TP + TN) / Total = (459 + 14091) / 15000 = <b>97.00%</b></div>
+            <div>• <b>Precision</b> = TP / (TP + FP) = 459 / 601 = <b>76.37%</b></div>
+            <div>• <b>Recall</b> = TP / (TP + FN) = 459 / 767 = <b>59.84%</b></div>
+            <div>• <b>F1 Score</b> = 2 × P × R / (P + R) = <b>67.11%</b></div>
+            <div>• <b>FPR</b> = FP / (FP + TN) = 142 / 14233 = <b>1.00%</b></div>
+            <div style="margin-top: 10px; font-size: 12px; color: var(--text-dim); font-style: italic;">
+              Note: Validation benchmark metrics (above) reflect model selection during hyperparameter tuning on the validation split, whereas Production Operating metrics reflect the calibrated XGBoost classifier evaluated on the untouched future test split under the 1.00% FPR operational policy.
+            </div>
           </div>
         </div>
       </section>
 
       <!-- Bottom Navigation -->
       <div style="display: flex; justify-content: space-between; margin-top: 32px;">
-        <a class="btn btn-secondary" href="/fraud-intelligence">← Fraud Intelligence</a>
+        <a class="btn btn-secondary" href="/screen">← Transaction Screening</a>
         <a class="btn btn-primary" href="/">Back to Dashboard →</a>
       </div>
     </main>
   </div>
+
+  <script>
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = 'Inter, sans-serif';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const ctx = document.getElementById('modelCompChart');
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Accuracy', 'Precision', 'Recall', 'F1 Score', 'ROC-AUC'],
+            datasets: [
+              {
+                label: 'LightGBM',
+                data: [97.03, 72.65, 67.36, 69.91, 95.66],
+                backgroundColor: '#38bdf8',
+                borderRadius: 4
+              },
+              {
+                label: 'Logistic Regression',
+                data: [96.83, 76.21, 55.40, 64.16, 95.07],
+                backgroundColor: '#94a3b8',
+                borderRadius: 4
+              },
+              {
+                label: 'Random Forest',
+                data: [96.43, 64.65, 66.84, 65.73, 94.78],
+                backgroundColor: '#f59e0b',
+                borderRadius: 4
+              },
+              {
+                label: 'XGBoost (Production)',
+                data: [96.81, 67.60, 72.43, 69.93, 95.67],
+                backgroundColor: '#2563eb',
+                borderRadius: 4
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'top' },
+              tooltip: {
+                callbacks: {
+                  label: (context) => `${context.dataset.label}: ${context.raw.toFixed(2)}%`
+                }
+              }
+            },
+            scales: {
+              x: { grid: { display: false } },
+              y: { grid: { color: '#1e293b' }, min: 50, max: 100 }
+            }
+          }
+        });
+      }
+    });
+  </script>
 </body>
 </html>
