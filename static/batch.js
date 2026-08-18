@@ -9,7 +9,8 @@ function esc(val) {
   }[m]));
 }
 
-let allBatchRows = [];
+let batchCurrentPage = 1;
+const batchPageSize = 10;
 
 function applyBatchFilters() {
   const merchantSel = document.getElementById('filterMerchant');
@@ -17,6 +18,9 @@ function applyBatchFilters() {
   const tierSel = document.getElementById('filterTier');
   const countSpan = document.getElementById('filteredCount');
   const tbody = document.getElementById('batchTbody');
+  const prevBtn = document.getElementById('batchPrevPage');
+  const nextBtn = document.getElementById('batchNextPage');
+  const pageInfo = document.getElementById('batchPageInfo');
 
   if (!tbody) return;
 
@@ -31,16 +35,30 @@ function applyBatchFilters() {
     return true;
   });
 
+  const totalItems = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / batchPageSize));
+
+  if (batchCurrentPage > totalPages) batchCurrentPage = totalPages;
+  if (batchCurrentPage < 1) batchCurrentPage = 1;
+
   if (countSpan) {
-    countSpan.textContent = `Showing ${filtered.length} of ${allBatchRows.length} transactions`;
+    countSpan.textContent = `Showing ${totalItems} of ${allBatchRows.length} transactions`;
   }
 
-  const preview = filtered.slice(0, 50);
+  if (pageInfo) {
+    pageInfo.textContent = `Page ${batchCurrentPage} of ${totalPages} (10 per page)`;
+  }
 
-  if (!preview.length) {
+  if (prevBtn) prevBtn.disabled = batchCurrentPage <= 1;
+  if (nextBtn) nextBtn.disabled = batchCurrentPage >= totalPages;
+
+  if (!totalItems) {
     tbody.innerHTML = `<tr><td colspan="9" class="empty-state">No transactions match the selected filter combination.</td></tr>`;
     return;
   }
+
+  const startIndex = (batchCurrentPage - 1) * batchPageSize;
+  const preview = filtered.slice(startIndex, startIndex + batchPageSize);
 
   tbody.innerHTML = preview.map(r => {
     const dec = r && r.decision != null ? String(r.decision) : 'N/A';
@@ -211,17 +229,43 @@ if (btn) {
             <tbody id="batchTbody"></tbody>
           </table>
         </div>
-        <p style="font-size: 12px; color: var(--text-dim); margin-top: 10px;">
-          Showing preview of up to 50 filtered rows. Click "Download Predictions CSV" for complete ${totalRows}-row results.
-        </p>
+
+        <!-- Pagination Controls -->
+        <div id="batchPagination" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 16px; background: var(--bg-card); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border);">
+          <button id="batchPrevPage" class="btn btn-secondary" style="font-size: 12px; padding: 6px 14px;" disabled>← Previous Page</button>
+          <span id="batchPageInfo" style="font-size: 13px; font-weight: 600; color: var(--accent);">Page 1 of 1 (10 per page)</span>
+          <button id="batchNextPage" class="btn btn-primary" style="font-size: 12px; padding: 6px 14px;">Like to know more? Click Next Page →</button>
+        </div>
       `;
 
+      batchCurrentPage = 1;
       applyBatchFilters();
 
       ['filterMerchant', 'filterDecision', 'filterTier'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('change', applyBatchFilters);
+        if (el) el.addEventListener('change', () => {
+          batchCurrentPage = 1;
+          applyBatchFilters();
+        });
       });
+
+      const prevBtn = document.getElementById('batchPrevPage');
+      if (prevBtn) {
+        prevBtn.onclick = () => {
+          if (batchCurrentPage > 1) {
+            batchCurrentPage--;
+            applyBatchFilters();
+          }
+        };
+      }
+
+      const nextBtn = document.getElementById('batchNextPage');
+      if (nextBtn) {
+        nextBtn.onclick = () => {
+          batchCurrentPage++;
+          applyBatchFilters();
+        };
+      }
 
       const dlBtn = document.getElementById('downloadBtn');
       if (dlBtn) {
