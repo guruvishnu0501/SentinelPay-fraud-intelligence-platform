@@ -38,8 +38,41 @@ class DatabaseManager:
     """
     def __init__(self):
         self.use_mysql = False
-        self.db_path = Path(__file__).parent / "sentinelpay.db"
+        self.db_path = self._resolve_sqlite_db_path()
         self._init_db()
+
+    def _resolve_sqlite_db_path(self):
+        # 1. Direct file path from environment variable
+        for env_var in ["SENTINELPAY_DB_PATH", "DB_PATH"]:
+            val = os.getenv(env_var)
+            if val:
+                p = Path(val)
+                target = p if p.suffix == ".db" else p / "sentinelpay.db"
+                target.parent.mkdir(parents=True, exist_ok=True)
+                return target
+
+        # 2. Directory path from environment variable (e.g. Render DATA_DIR=/var/data)
+        data_dir = os.getenv("DATA_DIR")
+        if data_dir:
+            p = Path(data_dir)
+            p.mkdir(parents=True, exist_ok=True)
+            return p / "sentinelpay.db"
+
+        # 3. Standard Render persistent disk mount locations
+        for mount in [Path("/var/data"), Path("/data")]:
+            if mount.exists() and os.access(mount, os.W_OK):
+                return mount / "sentinelpay.db"
+
+        # 4. Fallback to local application directory
+        local_path = Path(__file__).parent / "sentinelpay.db"
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        return local_path
+
+    def _get_sqlite_connection(self):
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA busy_timeout=5000;")
+        return conn
 
     def _get_mysql_connection(self, select_db=True):
         import pymysql
@@ -100,7 +133,7 @@ class DatabaseManager:
 
         # Fallback SQLite initialization
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = self._get_sqlite_connection()
             cursor = conn.cursor()
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS transactions (
@@ -184,7 +217,7 @@ class DatabaseManager:
 
         # SQLite Fallback
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = self._get_sqlite_connection()
             cursor = conn.cursor()
             sql = """
                 INSERT OR REPLACE INTO transactions (
@@ -257,7 +290,7 @@ class DatabaseManager:
 
         # SQLite Fallback
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = self._get_sqlite_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM transactions WHERE transaction_id = ? LIMIT 1", (tx_id,))
             row = cursor.fetchone()
@@ -283,7 +316,7 @@ class DatabaseManager:
 
         # SQLite Fallback
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = self._get_sqlite_connection()
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM transactions ORDER BY id DESC LIMIT ?", (limit,))
             rows = cursor.fetchall()
@@ -305,7 +338,7 @@ class DatabaseManager:
             except Exception as e:
                 logger.error(f"Failed to clear transactions from MySQL: {e}")
         try:
-            conn = sqlite3.connect(self.db_path)
+            conn = self._get_sqlite_connection()
             cursor = conn.cursor()
             cursor.execute("DELETE FROM transactions;")
             conn.commit()
