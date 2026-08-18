@@ -47,7 +47,7 @@ SentinelPay evaluates authorization requests through a **3-Layer Hybrid Fraud In
 
 ## 🚀 Quick Start Guide
 
-### Option A: Local Execution (Python 3.11+)
+### Local Execution (Python 3.11+)
 
 1. **Install Dependencies**:
    ```bash
@@ -69,22 +69,6 @@ SentinelPay evaluates authorization requests through a **3-Layer Hybrid Fraud In
 
 ---
 
-### Option B: Deployment to Vercel (GitHub → Vercel)
-
-SentinelPay is fully configured for serverless deployment on Vercel:
-
-1. **Push your code to GitHub**.
-2. **Import project into Vercel**: Connect your GitHub repository to Vercel.
-3. **Deploy**: Vercel automatically detects `vercel.json` and `api/index.py` and deploys the Flask application.
-
-Alternatively via Vercel CLI:
-```bash
-vercel login
-vercel deploy
-```
-
----
-
 ## 📊 Validated Model Performance Metrics
 
 Metrics were evaluated on an untouched future test split of 100,000 credit card transactions:
@@ -101,10 +85,10 @@ Metrics were evaluated on an untouched future test split of 100,000 credit card 
 
 ---
 
-## 📁 Clean Repository Structure
+## 📁 Repository Structure
 
 ```
-New/
+sentinelpay/
 ├── app.py                     # Flask web server & route registration
 ├── engine.py                  # FraudEngine orchestration & model loading
 ├── features.py                # Feature engineering & past-only card history logic
@@ -112,16 +96,13 @@ New/
 ├── model_spec.py              # Column schemas & categorical mappings
 ├── train_model.py             # Model training & Platt calibration script
 │
-├── api/                       # Vercel serverless entry point
-│   └── index.py               # WSGI handler for Vercel Python runtime
-│
 ├── artifacts/                 # Serialized model pipelines & metadata
 │   ├── model.joblib           # Trained XGBoost model
 │   ├── calibrator.joblib      # Platt sigmoid calibrator
 │   ├── preprocessor.joblib    # ColumnTransformer (OneHotEncoder + StandardScaler)
 │   ├── contract.joblib        # Quantiles & decision threshold
 │   ├── reference_data.joblib  # Fast runtime reference lookups
-│   ├── history_df.joblib      # Compressed customer history
+│   ├── history_df.joblib      # Customer history dataset
 │   └── metadata.json          # Model evaluation report
 │
 ├── templates/                 # HTML templates
@@ -141,10 +122,9 @@ New/
 │   ├── test_csv_batch_robustness.py
 │   └── model_health_report.py
 │
-├── vercel.json                # Vercel deployment routing manifest
-├── .vercelignore              # Deployment bundle optimization rules
-├── .gitignore                # Git repository ignore rules
+├── .gitignore                 # Git repository ignore rules
 ├── requirements.txt           # Active runtime dependencies
+├── MODEL_CARD.md              # Machine learning performance card
 └── README.md                  # Project documentation
 ```
 

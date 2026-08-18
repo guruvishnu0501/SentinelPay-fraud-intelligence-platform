@@ -1,8 +1,5 @@
-# Training dataset (Kept on local machine, excluded from GitHub repository)
+# Local training dataset (Kept locally, excluded from GitHub)
 Dataset.csv
-
-# Local Vercel CLI metadata
-.vercel/
 
 # Python compiled files & caches
 __pycache__/
