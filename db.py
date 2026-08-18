@@ -99,11 +99,18 @@ class DatabaseManager:
             kwargs["database"] = MYSQL_DB
         return pymysql.connect(**kwargs)
 
-    def _migrate_sqlite_to_postgres_if_needed(self):
+    def migrate_sqlite_to_postgres(self):
+        """
+        Explicit one-time migration of legacy SQLite transactions to PostgreSQL.
+        Must be invoked explicitly (e.g. python db.py --migrate) so it never
+        accidentally runs during automatic database initialization or resets.
+        """
         if not self.use_postgres:
+            logger.warning("Migration skipped: PostgreSQL is not active (DATABASE_URL not set).")
             return
         try:
             if not self.db_path.exists():
+                logger.info("Migration skipped: Local SQLite database file does not exist.")
                 return
             pg_conn = self._get_pg_connection()
             with pg_conn.cursor() as cur:
@@ -111,43 +118,42 @@ class DatabaseManager:
                 count = cur.fetchone()[0]
             pg_conn.close()
 
-            if count == 0:
-                sqlite_conn = self._get_sqlite_connection()
-                sqlite_cur = sqlite_conn.cursor()
-                sqlite_cur.execute("SELECT * FROM transactions ORDER BY id ASC")
-                rows = sqlite_cur.fetchall()
-                sqlite_conn.close()
+            sqlite_conn = self._get_sqlite_connection()
+            sqlite_cur = sqlite_conn.cursor()
+            sqlite_cur.execute("SELECT * FROM transactions ORDER BY id ASC")
+            rows = sqlite_cur.fetchall()
+            sqlite_conn.close()
 
-                if rows:
-                    logger.info(f"Migrating {len(rows)} legacy SQLite transaction records to PostgreSQL...")
-                    pg_conn = self._get_pg_connection()
-                    with pg_conn.cursor() as cur:
-                        for row in rows:
-                            d = self._row_to_dict(row)
-                            if not d:
-                                continue
-                            reasons_json = json.dumps(d.get("reasons", []))
-                            sql = """
-                                INSERT INTO transactions (
-                                    transaction_id, card_id, trans_date_trans_time, amount_inr,
-                                    merchant_name, merchant_category, channel, ip_country,
-                                    transaction_city, device_id, ml_fraud_probability,
-                                    operational_risk_score, risk_level, decision,
-                                    recommended_action, reasons
-                                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                                ON CONFLICT (transaction_id) DO NOTHING;
-                            """
-                            cur.execute(sql, (
-                                d.get("transaction_id"), d.get("card_id"), d.get("trans_date_trans_time"),
-                                d.get("amount_inr"), d.get("merchant_name"), d.get("merchant_category"),
-                                d.get("channel"), d.get("ip_country"), d.get("transaction_city"),
-                                d.get("device_id"), d.get("ml_fraud_probability"), d.get("operational_risk_score"),
-                                d.get("risk_level"), d.get("decision"), d.get("recommended_action"), reasons_json
-                            ))
-                    pg_conn.close()
-                    logger.info("One-time SQLite -> PostgreSQL migration complete.")
+            if rows:
+                logger.info(f"Explicit migration: copying {len(rows)} legacy SQLite transaction records to PostgreSQL...")
+                pg_conn = self._get_pg_connection()
+                with pg_conn.cursor() as cur:
+                    for row in rows:
+                        d = self._row_to_dict(row)
+                        if not d:
+                            continue
+                        reasons_json = json.dumps(d.get("reasons", []))
+                        sql = """
+                            INSERT INTO transactions (
+                                transaction_id, card_id, trans_date_trans_time, amount_inr,
+                                merchant_name, merchant_category, channel, ip_country,
+                                transaction_city, device_id, ml_fraud_probability,
+                                operational_risk_score, risk_level, decision,
+                                recommended_action, reasons
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (transaction_id) DO NOTHING;
+                        """
+                        cur.execute(sql, (
+                            d.get("transaction_id"), d.get("card_id"), d.get("trans_date_trans_time"),
+                            d.get("amount_inr"), d.get("merchant_name"), d.get("merchant_category"),
+                            d.get("channel"), d.get("ip_country"), d.get("transaction_city"),
+                            d.get("device_id"), d.get("ml_fraud_probability"), d.get("operational_risk_score"),
+                            d.get("risk_level"), d.get("decision"), d.get("recommended_action"), reasons_json
+                        ))
+                pg_conn.close()
+                logger.info("Explicit SQLite -> PostgreSQL migration finished successfully.")
         except Exception as e:
-            logger.error(f"Error during SQLite to PostgreSQL migration: {e}")
+            logger.error(f"Error during explicit SQLite to PostgreSQL migration: {e}")
 
     def _init_db(self):
         # 1. Try PostgreSQL initialization if DATABASE_URL is set
@@ -182,7 +188,6 @@ class DatabaseManager:
                 conn.close()
                 self.use_postgres = True
                 logger.info("PostgreSQL database initialized successfully via DATABASE_URL")
-                self._migrate_sqlite_to_postgres_if_needed()
                 return
             except Exception as e:
                 logger.warning(f"PostgreSQL initialization failed ({e}). Falling back to next engine.")
@@ -511,4 +516,11 @@ class DatabaseManager:
 
 # Instantiate singleton DB manager
 db_manager = DatabaseManager()
+
+if __name__ == "__main__":
+    import sys
+    if "--migrate" in sys.argv:
+        print("Executing explicit SQLite -> PostgreSQL migration...")
+        db_manager.migrate_sqlite_to_postgres()
+
 
