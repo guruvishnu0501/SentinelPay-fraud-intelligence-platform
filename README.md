@@ -1,4 +1,4 @@
-# 🛡️ SentinelPay — AI-Powered Fraud Risk Intelligence Platform
+#  SentinelPay — AI-Powered Fraud Risk Intelligence Platform
 
 **SentinelPay** is an enterprise-grade credit card fraud risk intelligence platform. It combines calibrated machine learning (XGBoost), past-only behavioral tracking, and an explainable rules-based evidence engine to evaluate transaction authorization requests in real time.
 
@@ -6,7 +6,7 @@ Designed for high-throughput payment systems, SentinelPay provides instant risk 
 
 ---
 
-## 🏗️ System Architecture & Data Flow
+##  System Architecture & Data Flow
 
 SentinelPay evaluates authorization requests through a **3-Layer Hybrid Intelligence Pipeline**:
 
@@ -54,13 +54,13 @@ SentinelPay evaluates authorization requests through a **3-Layer Hybrid Intellig
 
 ---
 
-## ✨ Core Features
+##  Core Features
 
-- **⚡ Real-Time Single Screening**: Evaluate single authorization attempts instantly via standard web forms or REST APIs.
-- **📁 High-Throughput Batch Processing**: Process multi-transaction CSV files with chronological execution and interactive risk breakdown.
-- **📄 Audit-Ready Investigation PDF Reports**: Generate dynamic, one-click PDF fraud reports formatted with executive metrics, visual risk indicator bars, and complete transaction summaries.
-- **🔍 Validated Model Analytics**: Transparent model health documentation displaying benchmark comparisons across 4 algorithms and exact confusion matrix verification.
-- **🐳 Docker & Cloud Ready**: Fully Dockerized with `docker-compose` for local team setup, and production-ready for platforms like Render.
+- ** Real-Time Single Screening**: Evaluate single authorization attempts instantly via standard web forms or REST APIs.
+- ** High-Throughput Batch Processing**: Process multi-transaction CSV files with chronological execution and interactive risk breakdown.
+- ** Audit-Ready Investigation PDF Reports**: Generate dynamic, one-click PDF fraud reports formatted with executive metrics, visual risk indicator bars, and complete transaction summaries.
+- ** Validated Model Analytics**: Transparent model health documentation displaying benchmark comparisons across 4 algorithms and exact confusion matrix verification.
+- ** Docker & Cloud Ready**: Fully Dockerized with `docker-compose` for local team setup, and production-ready for platforms like Render.
 
 ---
 
@@ -80,7 +80,7 @@ Model metrics were evaluated on an untouched future test split of 15,000 credit 
 
 ---
 
-## 📂 Project Directory Structure
+##  Project Directory Structure
 
 ```text
 sentinelpay/
@@ -128,7 +128,7 @@ sentinelpay/
 
 ---
 
-## 🚀 Quick Start Guide
+##  Quick Start Guide
 
 ### Option 1: Run with Docker Compose (Recommended for Teams)
 
@@ -161,7 +161,7 @@ Access the application at: **`http://localhost:8000`**
 
 ---
 
-## 🔌 REST API Reference
+##  REST API Reference
 
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
@@ -181,6 +181,4 @@ Access the application at: **`http://localhost:8000`**
 
 ---
 
-## 🛡️ License & Disclaimer
 
-*SentinelPay is an AI-assisted transaction risk screening platform prototype developed for demonstration, risk analysis, and evaluation purposes.*
