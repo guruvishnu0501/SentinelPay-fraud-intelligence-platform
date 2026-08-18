@@ -64,7 +64,7 @@ SentinelPay evaluates authorization requests through a **3-Layer Hybrid Intellig
 
 ---
 
-## 📊 Model Performance & Metrics
+##  Model Performance & Metrics
 
 Model metrics were evaluated on an untouched future test split of 15,000 credit card transactions at the target 1.00% False Positive Rate operating policy constraint:
 
