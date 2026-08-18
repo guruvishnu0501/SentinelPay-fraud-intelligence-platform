@@ -31,7 +31,8 @@
             <span class="status-badge"><span class="dot"></span> Risk Engine Operational</span>
           </div>
         </div>
-        <div>
+        <div style="display: flex; gap: 8px;">
+          <button id="syncDataBtn" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">↻ Refresh / Sync Data</button>
           <button id="resetSessionBtn" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px; opacity: 0.8;">↻ Clear Session Data</button>
         </div>
       </section>
@@ -394,11 +395,17 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Immediate sync from server database
+      // Immediate sync from server database on page load
       syncSharedDashboard();
 
-      // Real-time auto-polling every 3 seconds to keep all devices/teammates in sync
-      setInterval(syncSharedDashboard, 3000);
+      // Manual sync button handler
+      const syncBtn = document.getElementById('syncDataBtn');
+      if (syncBtn) {
+        syncBtn.addEventListener('click', () => {
+          lastSyncedDataHash = '';
+          syncSharedDashboard();
+        });
+      }
 
       // Re-sync when browser tab becomes active or focused
       window.addEventListener('focus', syncSharedDashboard);
