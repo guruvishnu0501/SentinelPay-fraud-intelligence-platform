@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env if present
 load_dotenv()
 
+DATABASE_URL = os.getenv("DATABASE_URL")
 MYSQL_HOST = os.getenv("MYSQL_HOST", "localhost")
 MYSQL_PORT = int(os.getenv("MYSQL_PORT", 3306))
 MYSQL_USER = os.getenv("MYSQL_USER", "root")
@@ -33,13 +34,23 @@ def _safe_str(val, default=""):
 
 class DatabaseManager:
     """
-    Resilient Database Manager supporting MySQL with automatic SQLite fallback.
+    Resilient Database Manager supporting PostgreSQL (Render Production), MySQL, and SQLite.
     Ensures zero application downtime regardless of database availability.
     """
     def __init__(self):
+        self.use_postgres = False
         self.use_mysql = False
         self.db_path = self._resolve_sqlite_db_path()
         self._init_db()
+
+    def _get_pg_connection(self):
+        import psycopg2
+        url = DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        conn = psycopg2.connect(url)
+        conn.autocommit = True
+        return conn
 
     def _resolve_sqlite_db_path(self):
         # 1. Direct file path from environment variable
@@ -88,8 +99,95 @@ class DatabaseManager:
             kwargs["database"] = MYSQL_DB
         return pymysql.connect(**kwargs)
 
+    def _migrate_sqlite_to_postgres_if_needed(self):
+        if not self.use_postgres:
+            return
+        try:
+            if not self.db_path.exists():
+                return
+            pg_conn = self._get_pg_connection()
+            with pg_conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM transactions;")
+                count = cur.fetchone()[0]
+            pg_conn.close()
+
+            if count == 0:
+                sqlite_conn = self._get_sqlite_connection()
+                sqlite_cur = sqlite_conn.cursor()
+                sqlite_cur.execute("SELECT * FROM transactions ORDER BY id ASC")
+                rows = sqlite_cur.fetchall()
+                sqlite_conn.close()
+
+                if rows:
+                    logger.info(f"Migrating {len(rows)} legacy SQLite transaction records to PostgreSQL...")
+                    pg_conn = self._get_pg_connection()
+                    with pg_conn.cursor() as cur:
+                        for row in rows:
+                            d = self._row_to_dict(row)
+                            if not d:
+                                continue
+                            reasons_json = json.dumps(d.get("reasons", []))
+                            sql = """
+                                INSERT INTO transactions (
+                                    transaction_id, card_id, trans_date_trans_time, amount_inr,
+                                    merchant_name, merchant_category, channel, ip_country,
+                                    transaction_city, device_id, ml_fraud_probability,
+                                    operational_risk_score, risk_level, decision,
+                                    recommended_action, reasons
+                                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                ON CONFLICT (transaction_id) DO NOTHING;
+                            """
+                            cur.execute(sql, (
+                                d.get("transaction_id"), d.get("card_id"), d.get("trans_date_trans_time"),
+                                d.get("amount_inr"), d.get("merchant_name"), d.get("merchant_category"),
+                                d.get("channel"), d.get("ip_country"), d.get("transaction_city"),
+                                d.get("device_id"), d.get("ml_fraud_probability"), d.get("operational_risk_score"),
+                                d.get("risk_level"), d.get("decision"), d.get("recommended_action"), reasons_json
+                            ))
+                    pg_conn.close()
+                    logger.info("One-time SQLite -> PostgreSQL migration complete.")
+        except Exception as e:
+            logger.error(f"Error during SQLite to PostgreSQL migration: {e}")
+
     def _init_db(self):
-        # Try MySQL initialization first
+        # 1. Try PostgreSQL initialization if DATABASE_URL is set
+        if DATABASE_URL:
+            try:
+                import psycopg2
+                conn = self._get_pg_connection()
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS transactions (
+                            id SERIAL PRIMARY KEY,
+                            transaction_id VARCHAR(64) UNIQUE,
+                            card_id VARCHAR(64),
+                            trans_date_trans_time VARCHAR(64),
+                            amount_inr DOUBLE PRECISION,
+                            merchant_name VARCHAR(255),
+                            merchant_category VARCHAR(100),
+                            channel VARCHAR(50),
+                            ip_country VARCHAR(100),
+                            transaction_city VARCHAR(100),
+                            device_id VARCHAR(100),
+                            ml_fraud_probability DOUBLE PRECISION,
+                            operational_risk_score DOUBLE PRECISION,
+                            risk_level VARCHAR(20),
+                            decision VARCHAR(50),
+                            recommended_action VARCHAR(100),
+                            reasons TEXT,
+                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        );
+                        CREATE INDEX IF NOT EXISTS idx_transactions_txid ON transactions(transaction_id);
+                    """)
+                conn.close()
+                self.use_postgres = True
+                logger.info("PostgreSQL database initialized successfully via DATABASE_URL")
+                self._migrate_sqlite_to_postgres_if_needed()
+                return
+            except Exception as e:
+                logger.warning(f"PostgreSQL initialization failed ({e}). Falling back to next engine.")
+
+        # 2. Try MySQL initialization if MYSQL_PASSWORD is set
         if MYSQL_PASSWORD:
             try:
                 import pymysql
@@ -131,7 +229,7 @@ class DatabaseManager:
             except Exception as e:
                 logger.warning(f"MySQL initialization failed ({e}). Falling back to SQLite.")
 
-        # Fallback SQLite initialization
+        # 3. Fallback SQLite initialization
         try:
             conn = self._get_sqlite_connection()
             cursor = conn.cursor()
@@ -185,6 +283,37 @@ class DatabaseManager:
         risk_level = _safe_str(tx_res.get("risk_level"))
         decision = _safe_str(tx_res.get("decision"))
         action = _safe_str(tx_res.get("recommended_action"))
+
+        if self.use_postgres:
+            try:
+                conn = self._get_pg_connection()
+                with conn.cursor() as cursor:
+                    sql = """
+                        INSERT INTO transactions (
+                            transaction_id, card_id, trans_date_trans_time, amount_inr,
+                            merchant_name, merchant_category, channel, ip_country,
+                            transaction_city, device_id, ml_fraud_probability,
+                            operational_risk_score, risk_level, decision,
+                            recommended_action, reasons
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (transaction_id) DO UPDATE SET
+                            operational_risk_score = EXCLUDED.operational_risk_score,
+                            risk_level = EXCLUDED.risk_level,
+                            decision = EXCLUDED.decision,
+                            recommended_action = EXCLUDED.recommended_action,
+                            reasons = EXCLUDED.reasons;
+                    """
+                    cursor.execute(sql, (
+                        tx_id, card_id, trans_time, amount_inr,
+                        merchant_name, merchant_category, channel, ip_country,
+                        transaction_city, device_id, ml_prob,
+                        op_score, risk_level, decision,
+                        action, reasons_json
+                    ))
+                conn.close()
+                return
+            except Exception as e:
+                logger.error(f"Failed to save transaction to PostgreSQL: {e}")
 
         if self.use_mysql:
             try:
@@ -277,6 +406,18 @@ class DatabaseManager:
         if not tx_id:
             return None
 
+        if self.use_postgres:
+            try:
+                import psycopg2.extras
+                conn = self._get_pg_connection()
+                with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+                    cursor.execute("SELECT * FROM transactions WHERE transaction_id = %s LIMIT 1", (tx_id,))
+                    row = cursor.fetchone()
+                conn.close()
+                return self._row_to_dict(row) if row else None
+            except Exception as e:
+                logger.error(f"Failed to fetch transaction from PostgreSQL: {e}")
+
         if self.use_mysql:
             try:
                 conn = self._get_mysql_connection(select_db=True)
@@ -303,6 +444,18 @@ class DatabaseManager:
     def get_recent_transactions(self, limit=1000):
         """Retrieve recent saved transactions."""
         results = []
+        if self.use_postgres:
+            try:
+                import psycopg2.extras
+                conn = self._get_pg_connection()
+                with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
+                    cursor.execute("SELECT * FROM transactions ORDER BY id DESC LIMIT %s", (limit,))
+                    rows = cursor.fetchall()
+                conn.close()
+                return [self._row_to_dict(r) for r in rows if r]
+            except Exception as e:
+                logger.error(f"Failed to fetch recent transactions from PostgreSQL: {e}")
+
         if self.use_mysql:
             try:
                 conn = self._get_mysql_connection(select_db=True)
@@ -328,6 +481,16 @@ class DatabaseManager:
 
     def clear_transactions(self):
         """Clear all stored transactions for session reset."""
+        if self.use_postgres:
+            try:
+                conn = self._get_pg_connection()
+                with conn.cursor() as cursor:
+                    cursor.execute("TRUNCATE TABLE transactions;")
+                conn.close()
+                return
+            except Exception as e:
+                logger.error(f"Failed to clear transactions from PostgreSQL: {e}")
+
         if self.use_mysql:
             try:
                 conn = self._get_mysql_connection(select_db=True)
