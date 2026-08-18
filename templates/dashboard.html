@@ -173,6 +173,7 @@
     }
 
     let currentTransactions = [];
+    let lastSyncedDataHash = '';
 
     async function syncSharedDashboard() {
       try {
@@ -180,6 +181,11 @@
         const data = await res.json();
         if (data.ok && Array.isArray(data.transactions)) {
           const newTxList = data.transactions;
+          const currentHash = JSON.stringify(newTxList);
+          if (currentHash === lastSyncedDataHash) {
+            return; // Data has not changed: avoid chart destruction & flicker!
+          }
+          lastSyncedDataHash = currentHash;
           // Reverse order so index 0 is oldest and last is newest for trends/KPIs
           const normalizedTxList = newTxList.slice().reverse();
           currentTransactions = normalizedTxList;
@@ -429,6 +435,7 @@
         resetBtn.addEventListener('click', async () => {
           localStorage.clear();
           sessionStorage.clear();
+          lastSyncedDataHash = '';
           try {
             await fetch('/api/clear-session', { method: 'POST' });
           } catch (e) {}
