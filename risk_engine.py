@@ -11,7 +11,15 @@ def evidence(f):
     p99 = int(f.get("amount_p99_flag", 0))
     
     # Amount Evidence
-    if p99 or amount >= 100000:
+    if amount >= 500000:
+        score += 40
+        families["amount"] = 1
+        reasons.append(f"Extreme high-value transaction exceeding ₹5,00,000 (₹{amount:,.0f}).")
+    elif amount >= 200000:
+        score += 32
+        families["amount"] = 1
+        reasons.append(f"Very high-value transaction exceeding ₹2,00,000 (₹{amount:,.0f}).")
+    elif p99 or amount >= 100000:
         score += 25
         families["amount"] = 1
         if amount >= 100000:
@@ -120,14 +128,14 @@ def evidence(f):
 
 def final_decision(prob, evidence_score, families, threshold):
     """
-    STRICT HYBRID OPERATIONAL DECISION POLICY:
+    HYBRID OPERATIONAL DECISION POLICY:
     
-    Operational Risk Score (0-100) = 38% ML Probability Percent + 45% Rule Evidence Score + 17% Anomaly Intensity
-    - ML Probability Percent: float in range [0, 100]
-    - Rule Evidence Score: float in range [0, 100]
-    - Anomaly Intensity Score: min(100, num_families * 20.0) in range [0, 100]
+    Operational Risk Score (0-100):
+    - Base Weighted Score = 38% ML Probability + 45% Rule Evidence + 17% Anomaly Intensity
+    - High-Confidence ML Override: If calibrated ML probability >= 85% with major evidence (amount >= 5L, foreign IP, impossible speed, or >= 4 families),
+      the Operational Risk Score reflects high model confidence so high-confidence fraud is properly blocked.
     
-    Strict Operational Tier Mapping:
+    Operational Tier Mapping:
     - LOW    (0.00 to 39.99)  -> GENUINE TRANSACTION              -> ALLOW
     - MEDIUM (40.00 to 69.99) -> SUSPICIOUS TRANSACTION             -> STEP-UP AUTHENTICATION / REVIEW
     - HIGH   (70.00 to 100.0) -> FRAUDULENT TRANSACTION             -> BLOCK
@@ -136,7 +144,16 @@ def final_decision(prob, evidence_score, families, threshold):
     num_families = len(families)
     anomaly_intensity = min(100.0, num_families * 20.0)
     
-    operational_score = min(100.0, max(0.0, 0.38 * ml_score + 0.45 * evidence_score + 0.17 * anomaly_intensity))
+    raw_operational = 0.38 * ml_score + 0.45 * evidence_score + 0.17 * anomaly_intensity
+    
+    # High-confidence override requires high ML probability AND key risk factors
+    if ml_score >= 85.0 and (evidence_score >= 50 or num_families >= 4 or int(families.get("amount", 0)) == 1 and evidence_score >= 35 or int(families.get("geo", 0)) == 1 or int(families.get("channel", 0)) == 1):
+        # If amount >= 50k and sensitive merchant or deep night or foreign IP, override to ml_score
+        operational_score = max(raw_operational, ml_score)
+    else:
+        operational_score = raw_operational
+        
+    operational_score = min(100.0, max(0.0, operational_score))
     
     if operational_score >= 70.0:
         classification = "FRAUDULENT TRANSACTION"
