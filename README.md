@@ -56,11 +56,11 @@ SentinelPay evaluates authorization requests through a **3-Layer Hybrid Intellig
 
 ##  Core Features
 
-- ** Real-Time Single Screening**: Evaluate single authorization attempts instantly via standard web forms or REST APIs.
-- ** High-Throughput Batch Processing**: Process multi-transaction CSV files with chronological execution and interactive risk breakdown.
-- ** Audit-Ready Investigation PDF Reports**: Generate dynamic, one-click PDF fraud reports formatted with executive metrics, visual risk indicator bars, and complete transaction summaries.
-- ** Validated Model Analytics**: Transparent model health documentation displaying benchmark comparisons across 4 algorithms and exact confusion matrix verification.
-- ** Docker & Cloud Ready**: Fully Dockerized with `docker-compose` for local team setup, and production-ready for platforms like Render.
+- **Real-Time Single Screening**: Evaluate single authorization attempts instantly via standard web forms or REST APIs.
+- **High-Throughput Batch Processing**: Process multi-transaction CSV files with chronological execution and interactive risk breakdown.
+- **Audit-Ready Investigation PDF Reports**: Generate dynamic, one-click PDF fraud reports formatted with executive metrics, visual risk indicator bars, and complete transaction summaries.
+- **Validated Model Analytics**: Transparent model health documentation displaying benchmark comparisons across 4 algorithms and exact confusion matrix verification.
+- **Docker & Cloud Ready**: Fully Dockerized with `docker-compose` for local team setup, and production-ready for platforms like Render.
 
 ---
 
