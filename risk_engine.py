@@ -132,7 +132,8 @@ def final_decision(prob, evidence_score, families, threshold):
     
     Operational Risk Score (0-100):
     - Base Weighted Score = 38% ML Probability + 45% Rule Evidence + 17% Anomaly Intensity
-    - High-Confidence ML Override: If calibrated ML probability >= 85% with major evidence (amount >= 5L, foreign IP, impossible speed, or >= 4 families),
+    - High-Confidence ML Override: If calibrated ML probability >= 85% and severe risk triggers are present
+      (evidence >= 50, 4+ families, geo/foreign IP anomaly, velocity spike, or overseas ATM),
       the Operational Risk Score reflects high model confidence so high-confidence fraud is properly blocked.
     
     Operational Tier Mapping:
@@ -146,9 +147,15 @@ def final_decision(prob, evidence_score, families, threshold):
     
     raw_operational = 0.38 * ml_score + 0.45 * evidence_score + 0.17 * anomaly_intensity
     
-    # High-confidence override requires high ML probability AND key risk factors
-    if ml_score >= 85.0 and (evidence_score >= 50 or num_families >= 4 or int(families.get("amount", 0)) == 1 and evidence_score >= 35 or int(families.get("geo", 0)) == 1 or int(families.get("channel", 0)) == 1):
-        # If amount >= 50k and sensitive merchant or deep night or foreign IP, override to ml_score
+    has_severe_risk = (
+        evidence_score >= 50 or 
+        num_families >= 4 or 
+        int(families.get("geo", 0)) == 1 or 
+        int(families.get("velocity", 0)) == 1 or 
+        int(families.get("channel", 0)) == 1
+    )
+    
+    if ml_score >= 85.0 and has_severe_risk:
         operational_score = max(raw_operational, ml_score)
     else:
         operational_score = raw_operational
