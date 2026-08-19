@@ -191,7 +191,7 @@
           </div>
         </div>
         <p style="font-size: 13px; color: var(--text-dim); margin-top: 16px; font-style: italic;">
-          Evaluated on the untouched future test split (15,000 transactions, rows 85,000–100,000) after Platt sigmoid calibration under the 1.00% FPR operational policy constraint (calibrated threshold = 0.45).
+          Evaluated on the untouched future test split (15,000 transactions, rows 85,000–100,000) after Platt sigmoid calibration under the 0.93% FPR operational policy constraint (calibrated threshold = 0.45).
         </p>
       </section>
 
@@ -199,7 +199,7 @@
       <section class="panel">
         <div class="section-title">Production Model Confusion Matrix (Final Untouched Test Split Evaluation)</div>
         <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 16px;">
-          Operating confusion matrix for the production XGBoost model on the 15,000 untouched future test transactions at the 1.00% FPR operational policy threshold.
+          Operating confusion matrix for the production XGBoost model on the 15,000 untouched future test transactions at the 0.93% FPR operational policy threshold.
         </p>
 
         <div style="display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap;">
@@ -248,7 +248,7 @@
             <div>• <b>F1 Score</b> = 2 × P × R / (P + R) = <b>67.11%</b></div>
             <div>• <b>FPR</b> = FP / (FP + TN) = 142 / 14233 = <b>1.00%</b></div>
             <div style="margin-top: 10px; font-size: 12px; color: var(--text-dim); font-style: italic;">
-              Note: Validation benchmark metrics (above) reflect model selection during hyperparameter tuning on the validation split, whereas Production Operating metrics reflect the calibrated XGBoost classifier evaluated on the untouched future test split under the 1.00% FPR operational policy.
+              Note: Validation benchmark metrics (above) reflect model selection during hyperparameter tuning on the validation split, whereas Production Operating metrics reflect the calibrated XGBoost classifier evaluated on the untouched future test split under the 0.93% FPR operational policy.
             </div>
           </div>
         </div>

@@ -85,7 +85,7 @@ Model metrics were evaluated on an untouched future test split of 15,000 credit 
 ```text
 sentinelpay/
 ├── app.py                     # Flask Web Application & REST API Endpoints
-├── db.py                      # Database Manager (MySQL & SQLite fallback)
+├── db.py                      # Database Manager (PostgreSQL)
 ├── engine.py                  # FraudEngine Orchestrator (ML inference pipeline)
 ├── features.py                # Past-Only Feature Engineering & Behavioral Tracker
 ├── risk_engine.py             # Hybrid Risk Scoring & Evidence Rules Engine
