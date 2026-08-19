@@ -133,9 +133,8 @@ def pdf_report(result, raw_tx=None):
         ('PADDING', (0,0), (-1,-1), 10),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
     ]))
-    story.append(cards_table)
-    story.append(Spacer(1, 10))
-    story.append(create_risk_bar_drawing(prob))
+    op_score = float(result.get('operational_risk_score') if result.get('operational_risk_score') is not None else tx.get('operational_risk_score', prob * 100.0))
+    story.append(create_risk_bar_drawing(op_score / 100.0))
     story.append(Spacer(1, 16))
     
     # Section 2: Transaction Attributes Summary

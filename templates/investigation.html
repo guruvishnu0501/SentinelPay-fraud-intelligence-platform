@@ -391,10 +391,15 @@
       const timestamp = data.trans_date_trans_time || data.created_at || new Date().toLocaleString();
       const prob = data.ml_fraud_probability != null ? Number(data.ml_fraud_probability) : 0.0;
       const probPct = (prob * 100).toFixed(2) + '%';
-      const riskLevel = (data.risk_level || (prob > 0.45 ? 'HIGH' : (prob > 0.20 ? 'MEDIUM' : 'LOW'))).toUpperCase();
+      const opScore = data.operational_risk_score != null ? Number(data.operational_risk_score) : (prob * 100);
+      let riskLevel = (data.risk_level || '').toUpperCase();
+      if (!riskLevel) {
+        if (opScore >= 70) riskLevel = 'HIGH';
+        else if (opScore >= 40) riskLevel = 'MEDIUM';
+        else riskLevel = 'LOW';
+      }
       const shortDec = formatShortDecision(data.decision, riskLevel);
       const amount = data.amount_inr != null ? Number(data.amount_inr) : 0.0;
-      const threshold = '0.27';
       const priority = riskLevel === 'HIGH' ? 'Critical' : (riskLevel === 'MEDIUM' ? 'Elevated' : 'Standard');
       const location = (data.transaction_city || 'Hyderabad') + (data.ip_country ? (', ' + data.ip_country) : '');
 
@@ -435,8 +440,8 @@
       badge.textContent = riskLevel + ' RISK';
       badge.className = 'badge-risk ' + riskLevel.toLowerCase();
 
-      // Position risk bar marker
-      const markerPos = Math.max(0, Math.min(100, prob * 100));
+      // Position risk bar marker based on Operational Risk Score (0-100 scale)
+      const markerPos = Math.max(0, Math.min(100, opScore));
       document.getElementById('riskMarker').style.left = markerPos + '%';
     }
 
